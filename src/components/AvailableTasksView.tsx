@@ -9,8 +9,6 @@ import {
     Package,
     MapPin,
     Clock,
-    CheckCircle,
-    AlertTriangle,
     Filter,
     Search,
     Loader2,
