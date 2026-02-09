@@ -1,0 +1,390 @@
+/* stylelint-disable at-rule-no-unknown */
+/* VS Code CSS validation doesn't recognize Tailwind's @apply directive - these warnings are safe to ignore */
+@import "tailwindcss";
+
+/* ===================================
+   CUSTOM FONTS & TYPOGRAPHY
+   =================================== */
+@layer theme {
+    :root {
+        /* Font Families */
+        --font-heading: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    }
+}
+
+/* ===================================
+   CUSTOM ANIMATIONS
+   =================================== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes gradient {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* ===================================
+   GLOBAL STYLES
+   =================================== */
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: var(--font-body);
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-heading);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+
+    /* Smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Better focus outlines */
+    *:focus-visible {
+        @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-background;
+    }
+}
+
+/* ===================================
+   CUSTOM UTILITY CLASSES
+   =================================== */
+@layer utilities {
+
+    /* Animations */
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    .animate-slide-in-left {
+        animation: slideInLeft 0.6s ease-out;
+    }
+
+    .animate-slide-in-right {
+        animation: slideInRight 0.6s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.4s ease-out;
+    }
+
+    .animate-gradient {
+        background-size: 200% 200%;
+        animation: gradient 8s ease infinite;
+    }
+
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    /* Gradient Text */
+    .gradient-text {
+        @apply bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent;
+        background-size: 200% auto;
+    }
+
+    .gradient-text-animate {
+        @apply gradient-text animate-gradient;
+    }
+
+    /* Glassmorphism */
+    .glass {
+        @apply bg-white/10 backdrop-blur-lg border border-white/20;
+    }
+
+    .glass-dark {
+        @apply bg-black/10 backdrop-blur-lg border border-white/10;
+    }
+
+    /* Card Hover Effects */
+    .card-hover-lift {
+        @apply transition-all duration-300 ease-out;
+    }
+
+    .card-hover-lift:hover {
+        @apply -translate-y-2 shadow-xl;
+    }
+
+    /* Button Glow Effect */
+    .button-glow {
+        @apply relative overflow-hidden;
+    }
+
+    .button-glow::before {
+        content: '';
+        @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .button-glow:hover::before {
+        transform: translateX(100%);
+    }
+
+    /* Skeleton Loading */
+    .skeleton {
+        @apply animate-pulse bg-muted rounded;
+    }
+
+    .skeleton-shimmer {
+        @apply relative overflow-hidden bg-muted;
+    }
+
+    .skeleton-shimmer::after {
+        content: '';
+        @apply absolute inset-0;
+        background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent);
+        animation: shimmer 2s infinite;
+    }
+
+    /* Text Shadows */
+    .text-shadow-sm {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .text-shadow-lg {
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Smooth Transitions */
+    .transition-smooth {
+        @apply transition-all duration-300 ease-out;
+    }
+
+    /* Gradient Backgrounds */
+    .bg-gradient-primary {
+        @apply bg-gradient-to-r from-blue-600 to-blue-700;
+    }
+
+    .bg-gradient-secondary {
+        @apply bg-gradient-to-r from-purple-600 to-pink-600;
+    }
+
+    .bg-gradient-success {
+        @apply bg-gradient-to-r from-green-600 to-emerald-600;
+    }
+
+    .bg-gradient-hero {
+        @apply bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50;
+    }
+
+    .dark .bg-gradient-hero {
+        @apply from-blue-950/20 via-purple-950/20 to-pink-950/20;
+    }
+}
+
+/* ===================================
+   COMPONENT ENHANCEMENTS
+   =================================== */
+@layer components {
+
+    /* Enhanced Input Fields */
+    .input-enhanced {
+        @apply w-full px-4 py-3 rounded-lg border border-border bg-background;
+        @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+        @apply transition-all duration-200;
+    }
+
+    /* Enhanced Buttons */
+    .btn-primary-enhanced {
+        @apply bg-gradient-to-r from-blue-600 to-blue-700;
+        @apply hover:from-blue-700 hover:to-blue-800;
+        @apply shadow-lg shadow-blue-500/30;
+        @apply hover:shadow-xl hover:shadow-blue-500/40;
+        @apply transition-all duration-300;
+    }
+
+    /* Enhanced Cards */
+    .card-enhanced {
+        @apply bg-card border border-border/50 rounded-xl p-6;
+        @apply shadow-sm hover:shadow-md;
+        @apply transition-all duration-300;
+    }
+
+    .card-enhanced:hover {
+        @apply border-blue-500/50;
+    }
+
+    /* Feature Card with Icon */
+    .feature-card {
+        @apply card-enhanced group;
+    }
+
+    .feature-card-icon {
+        @apply w-12 h-12 rounded-lg flex items-center justify-center;
+        @apply bg-gradient-to-br from-blue-500 to-purple-600;
+        @apply group-hover:scale-110 transition-transform duration-300;
+    }
+
+    /* Stat Card */
+    .stat-card {
+        @apply flex items-center gap-3 p-4 rounded-lg;
+        @apply bg-gradient-to-br from-background to-muted/30;
+        @apply border border-border/50;
+        @apply hover:border-blue-500/50 transition-all duration-300;
+    }
+
+    /* Section Headers */
+    .section-header {
+        @apply text-3xl md:text-4xl font-bold mb-4;
+        font-family: var(--font-heading);
+    }
+
+    .section-subheader {
+        @apply text-lg text-muted-foreground max-w-2xl mx-auto;
+    }
+}
+
+/* ===================================
+   DARK MODE ENHANCEMENTS
+   =================================== */
+@layer base {
+    .dark {
+        /* Enhanced shadows for dark mode */
+        --tw-shadow-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .dark .card-enhanced {
+        @apply bg-card/50 backdrop-blur-sm;
+    }
+
+    .dark .glass {
+        @apply bg-white/5 border-white/10;
+    }
+}
+
+/* ===================================
+   RESPONSIVE UTILITIES
+   =================================== */
+@layer utilities {
+
+    /* Container Padding */
+    .container-padding {
+        @apply px-4 sm:px-6 lg:px-8;
+    }
+
+    /* Section Spacing */
+    .section-spacing {
+        @apply py-16 md:py-20 lg:py-24;
+    }
+}
+
+/* ===================================
+   ACCESSIBILITY ENHANCEMENTS
+   =================================== */
+@layer base {
+
+    /* Reduced motion for users who prefer it */
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .card-enhanced {
+            @apply border-2;
+        }
+    }
+}

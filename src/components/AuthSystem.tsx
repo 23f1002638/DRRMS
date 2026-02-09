@@ -213,58 +213,78 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/40 dark:from-slate-900 dark:via-slate-800/50 dark:to-slate-700/30 flex items-center justify-center p-4 relative">
-      <div className="absolute top-4 right-4 z-10">
+    <div className="min-h-screen bg-gradient-hero dark:from-slate-950 dark:via-blue-950/20 dark:to-purple-950/20 flex items-center justify-center p-4 relative overflow-hidden animate-fade-in">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+      </div>
+
+      <div className="absolute top-6 right-6 z-10">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md shadow-2xl border-border/50 backdrop-blur-sm">
-        <CardHeader className="space-y-1 pb-4">
-          <div className="flex items-center justify-center mb-4">
-            <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Shield className="h-7 w-7 text-white" />
+      <Card className="w-full max-w-md shadow-2xl border-border/50 backdrop-blur-sm bg-card/95 animate-scale-in relative z-10">
+        <CardHeader className="space-y-3 pb-6">
+          <div className="flex items-center justify-center mb-2">
+            <div className="h-16 w-16 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-2xl flex items-center justify-center shadow-xl animate-float">
+              <Shield className="h-9 w-9 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Disaster Relief Portal</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-3xl text-center font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Disaster Relief Portal
+          </CardTitle>
+          <CardDescription className="text-center text-base">
             Secure access to emergency management system
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl animate-scale-in">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <p className="text-sm text-red-800 dark:text-red-200 font-medium">{error}</p>
               </div>
             </div>
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
-              <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-8 p-1 bg-muted/50 rounded-xl">
+              <TabsTrigger
+                value="signin"
+                className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger
+                value="signup"
+                className="text-sm font-medium rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                Sign Up
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
+            <TabsContent value="signin" className="space-y-5 animate-fade-in">
+              <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email" className="text-sm font-medium">Email Address</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="you@example.com"
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
                     required
-                    className="w-full"
+                    className="input-enhanced h-11"
                     disabled={isLoading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
                   <div className="relative">
                     <Input
                       id="signin-password"
@@ -273,14 +293,14 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
                       required
-                      className="w-full pr-10"
+                      className="input-enhanced h-11 pr-11"
                       disabled={isLoading}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
                     >
@@ -295,7 +315,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-500 dark:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-700"
+                  className="w-full h-11 btn-primary-enhanced text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -310,38 +330,38 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
               </form>
             </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <TabsContent value="signup" className="space-y-5 animate-fade-in">
+              <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="Enter your full name"
+                    placeholder="John Doe"
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     required
-                    className="w-full"
+                    className="input-enhanced h-11"
                     disabled={isLoading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-medium">Email Address</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="you@example.com"
                     value={signUpEmail}
                     onChange={(e) => setSignUpEmail(e.target.value)}
                     required
-                    className="w-full"
+                    className="input-enhanced h-11"
                     disabled={isLoading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                   <div className="relative">
                     <Input
                       id="signup-password"
@@ -351,14 +371,14 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
                       onChange={(e) => setSignUpPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="w-full pr-10"
+                      className="input-enhanced h-11 pr-11"
                       disabled={isLoading}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
                     >
@@ -372,7 +392,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="signup-confirm-password" className="text-sm font-medium">Confirm Password</Label>
                   <Input
                     id="signup-confirm-password"
                     type={showPassword ? "text" : "password"}
@@ -380,25 +400,25 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
                     value={signUpConfirmPassword}
                     onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                     required
-                    className="w-full"
+                    className="input-enhanced h-11"
                     disabled={isLoading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-role">Role</Label>
+                  <Label htmlFor="signup-role" className="text-sm font-medium">Select Your Role</Label>
                   <Select value={signUpRole} onValueChange={(value: UserRole) => setSignUpRole(value)} disabled={isLoading}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
                       {publicRoles.map((role) => {
                         const Icon = roleIcons[role];
                         return (
-                          <SelectItem key={role} value={role}>
+                          <SelectItem key={role} value={role} className="cursor-pointer">
                             <div className="flex items-center gap-2">
                               <Icon className="h-4 w-4" />
-                              <span className="capitalize">{role}</span>
+                              <span className="capitalize font-medium">{role}</span>
                             </div>
                           </SelectItem>
                         );
@@ -407,12 +427,16 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
                   </Select>
                 </div>
 
-                <div className="p-3 bg-blue-50/70 dark:bg-blue-950/30 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-                  <div className="flex items-start gap-2">
-                    {React.createElement(roleIcons[signUpRole], {
-                      className: "h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400"
-                    })}
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        {React.createElement(roleIcons[signUpRole], {
+                          className: "h-4 w-4 text-white"
+                        })}
+                      </div>
+                    </div>
+                    <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
                       {roleDescriptions[signUpRole]}
                     </p>
                   </div>
@@ -420,7 +444,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 dark:from-green-500 dark:to-green-600 dark:hover:from-green-600 dark:hover:to-green-700"
+                  className="w-full h-11 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -436,8 +460,8 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
             </TabsContent>
           </Tabs>
 
-          <div className="mt-6 pt-4 border-t border-border/50">
-            <p className="text-xs text-muted-foreground text-center">
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
               {activeTab === 'signin' ?
                 'New to the platform? Switch to Sign Up to create an account.' :
                 'Join the disaster relief network. Your role will be saved to your profile.'

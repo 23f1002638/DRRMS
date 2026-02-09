@@ -123,30 +123,41 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <section className="section-spacing px-4 bg-gradient-hero animate-fade-in">
         <div className="container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
+            <div className="space-y-8 animate-slide-in-left">
               <div className="inline-block">
-                <span className="px-3 py-1 bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400 rounded-full text-sm font-medium">
-                  Emergency Response Platform
+                <span className="px-4 py-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 text-blue-600 dark:text-blue-400 rounded-full text-sm font-semibold border border-blue-600/20 backdrop-blur-sm">
+                  ✨ Emergency Response Platform
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                Coordinating Aid When It Matters Most
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                <span className="gradient-text-animate">
+                  Coordinating Aid
+                </span>
+                <br />
+                <span className="text-foreground">
+                  When It Matters Most
+                </span>
               </h1>
 
-              <p className="text-lg text-muted-foreground">
+              <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
                 A comprehensive disaster relief management system connecting victims, donors, volunteers, and administrators
                 to deliver rapid, coordinated emergency response and humanitarian aid.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={onGetStarted} size="lg" className="gap-2">
-                  Get Started <ArrowRight className="h-4 w-4" />
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  onClick={onGetStarted}
+                  size="lg"
+                  className="gap-2 btn-primary-enhanced text-white group"
+                >
+                  Get Started
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
-                <Button variant="outline" size="lg" asChild>
+                <Button variant="outline" size="lg" asChild className="border-2 hover:bg-muted/50">
                   <a href="#how-it-works">Learn More</a>
                 </Button>
               </div>
@@ -154,19 +165,27 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8">
                 {stats.map((stat, index) => (
-                  <div key={index} className="space-y-1">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                      <stat.icon className="h-4 w-4" />
-                      <p className="font-bold text-2xl">{stat.value}</p>
+                  <div
+                    key={index}
+                    className="stat-card animate-scale-in"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <stat.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-2xl text-foreground">{stat.value}</p>
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="relative">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative animate-slide-in-right">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1764684994219-8347a5ab0e5e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXNhc3RlciUyMHJlbGllZiUyMGVtZXJnZW5jeSUyMHJlc3BvbnNlJTIwdGVhbXxlbnwxfHx8fDE3NzA2MDUwNDZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                   alt="Disaster relief team in action"
@@ -176,13 +195,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               </div>
 
               {/* Floating card */}
-              <div className="absolute -bottom-6 left-6 right-6 bg-card border border-border rounded-xl p-4 shadow-lg">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-green-600 rounded-full flex items-center justify-center">
-                    <CheckCircle2 className="h-6 w-6 text-white" />
+              <div className="absolute -bottom-6 left-6 right-6 glass dark:glass-dark rounded-xl p-5 shadow-xl backdrop-blur-md animate-float">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                    <CheckCircle2 className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold">24/7 Emergency Response</p>
+                    <p className="font-semibold text-lg">24/7 Emergency Response</p>
                     <p className="text-sm text-muted-foreground">Always ready to help when disaster strikes</p>
                   </div>
                 </div>
@@ -193,28 +212,32 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 bg-muted/30">
+      <section id="features" className="section-spacing px-4 bg-muted/30">
         <div className="container mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center max-w-3xl mx-auto mb-16 animate-fade-in">
+            <h2 className="section-header">
               Powerful Features for Effective Relief
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="section-subheader">
               A complete toolkit designed to streamline disaster response operations and maximize impact.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="border-border hover:border-blue-600/50 transition-all duration-300 hover:shadow-lg">
+              <Card
+                key={index}
+                className="feature-card card-hover-lift border-border/50 hover:border-blue-500/50 bg-gradient-to-br from-background to-muted/20 animate-scale-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
                 <CardHeader>
-                  <div className="h-12 w-12 bg-blue-600/10 rounded-lg flex items-center justify-center mb-4">
-                    <feature.icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <div className="feature-card-icon mb-4">
+                    <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle>{feature.title}</CardTitle>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-base leading-relaxed">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
@@ -315,31 +338,32 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <section className="section-spacing px-4">
         <div className="container mx-auto">
-          <div className="relative rounded-2xl overflow-hidden">
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl animate-scale-in">
             <div className="absolute inset-0">
               <ImageWithFallback
                 src="https://images.unsplash.com/photo-1764738130382-cc7a8eaf26c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxodW1hbml0YXJpYW4lMjBhaWQlMjB2b2x1bnRlZXJzJTIwaGVscGluZ3xlbnwxfHx8fDE3NzA2MDUwNDZ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
                 alt="Volunteers helping community"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-purple-900/90" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-900/95 via-purple-900/95 to-blue-900/95" />
             </div>
 
-            <div className="relative z-10 text-center py-20 px-6">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <div className="relative z-10 text-center py-24 px-6">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 text-shadow-lg">
                 Ready to Make a Difference?
               </h2>
-              <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-white/95 mb-10 max-w-2xl mx-auto leading-relaxed">
                 Join thousands of users who are making disaster relief more efficient, coordinated, and impactful.
               </p>
               <Button
                 onClick={onGetStarted}
                 size="lg"
-                className="bg-white text-blue-900 hover:bg-white/90 gap-2"
+                className="bg-white text-blue-900 hover:bg-white/90 gap-2 shadow-xl hover:shadow-2xl transition-all duration-300 group text-lg px-8 py-6 h-auto"
               >
-                Get Started Now <ArrowRight className="h-4 w-4" />
+                Get Started Now
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </div>
