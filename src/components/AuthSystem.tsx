@@ -159,8 +159,14 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
         .eq('id', authData.user.id)
         .maybeSingle();
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
+      // If there's an error OR profile is null, retry
+      if (profileError || !profile) {
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        } else {
+          console.log('Profile not found on first attempt, retrying...');
+        }
+
         // Profile might not be created yet, try one more time
         await new Promise(resolve => setTimeout(resolve, 1000));
         const { data: retryProfile, error: retryError } = await supabase
@@ -169,8 +175,15 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
           .eq('id', authData.user.id)
           .maybeSingle();
 
-        if (retryError) throw retryError;
-        if (!retryProfile) throw new Error('Profile creation failed');
+        if (retryError) {
+          console.error('Retry profile fetch error:', retryError);
+          throw new Error('Failed to fetch profile after signup. Please try signing in.');
+        }
+
+        if (!retryProfile) {
+          console.error('Profile still not found after retry');
+          throw new Error('Profile creation failed. Please contact support or try signing in.');
+        }
 
         // Use retry profile
         const user: User = {
@@ -185,7 +198,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
         return;
       }
 
-      // Create user object
+      // Profile found on first attempt - create user object
       const user: User = {
         id: profile.id,
         name: profile.full_name,
@@ -197,9 +210,20 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
       onLogin(user);
     } catch (err: any) {
       console.error('Sign up error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint,
+      });
+
       let errorMessage = 'An unexpected error occurred during signup';
 
-      if (err.message?.includes('already registered')) {
+      if (err.message?.includes('Profile creation failed')) {
+        errorMessage = 'Failed to create your profile. Please try again or contact support.';
+      } else if (err.message?.includes('Failed to fetch profile')) {
+        errorMessage = 'Account created but profile fetch failed. Please try signing in.';
+      } else if (err.message?.includes('already registered') || err.code === '23505') {
         errorMessage = 'This email is already registered. Please sign in instead.';
       } else if (err.message) {
         errorMessage = err.message;
