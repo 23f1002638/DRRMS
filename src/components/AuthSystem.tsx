@@ -75,7 +75,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -157,7 +157,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
@@ -167,7 +167,7 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
           .from('profiles')
           .select('*')
           .eq('id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (retryError) throw retryError;
         if (!retryProfile) throw new Error('Profile creation failed');
