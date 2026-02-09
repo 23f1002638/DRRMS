@@ -191,7 +191,24 @@ function App() {
         case 'map':
           return <MapView user={user} />;
         case 'aid-request':
+        case 'request':  // Victim navigation uses 'request'
           return <AidRequestForm user={user} onSuccess={() => setActiveView('dashboard')} />;
+        case 'status':  // Victim navigation uses 'status'
+          // TODO: Create AidStatusView component
+          return (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">Aid Request Status</h2>
+              <p className="text-muted-foreground">Track your aid requests here.</p>
+            </div>
+          );
+        case 'resources':  // Victim navigation uses 'resources'
+          // TODO: Create ResourcesView component
+          return (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">Emergency Resources</h2>
+              <p className="text-muted-foreground">Find nearby emergency resources and shelters.</p>
+            </div>
+          );
         case 'volunteer-management':
           return <VolunteerManagement user={user} />;
         case 'inventory':
