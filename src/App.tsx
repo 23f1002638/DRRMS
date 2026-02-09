@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { AuthSystem, User } from './components/AuthSystem';
 import { Header } from './components/Header';
@@ -22,6 +22,9 @@ export type ActiveView =
   | 'analytics'
   | 'map'
   | 'aid-request'
+  | 'request'
+  | 'status'
+  | 'resources'
   | 'volunteer-management'
   | 'inventory';
 
@@ -157,6 +160,8 @@ function App() {
   }
 
   const renderDashboard = () => {
+    if (!user) return null;
+
     try {
       switch (user.role) {
         case 'admin':
@@ -182,6 +187,8 @@ function App() {
   };
 
   const renderActiveView = () => {
+    if (!user) return null;
+
     try {
       switch (activeView) {
         case 'dashboard':
@@ -233,7 +240,7 @@ function App() {
         <Header
           user={user}
           activeView={activeView}
-          onViewChange={setActiveView}
+          onViewChange={(view: string) => setActiveView(view as ActiveView)}
           onLogout={handleLogout}
         />
         <main className="pt-16">
