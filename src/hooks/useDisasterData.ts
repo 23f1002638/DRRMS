@@ -154,15 +154,33 @@ export function useSubmitRequest() {
                 throw new Error('You must be logged in to submit a request');
             }
 
-            // Insert request
+            // Map urgency to priority
+            const priorityMap: Record<number, string> = {
+                1: 'low',
+                2: 'low',
+                3: 'medium',
+                4: 'high',
+                5: 'critical',
+            };
+
+            // Insert request into aid_requests table
             const { data: newRequest, error: insertError } = await supabase
-                .from('relief_requests')
+                .from('aid_requests')
                 .insert({
-                    requester_id: user.id,
-                    ...data,
+                    user_id: user.id,
+                    aid_type: data.category,
+                    priority: priorityMap[data.urgency] || 'medium',
+                    people_count: data.people_count || 1,
+                    description: data.description || data.title,
+                    location: {
+                        lat: data.lat,
+                        lng: data.lng,
+                        address: data.location_address || `${data.lat}, ${data.lng}`
+                    },
+                    status: 'pending'
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (insertError) throw insertError;
 

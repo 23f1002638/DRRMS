@@ -9,6 +9,8 @@ import { VictimDashboard } from './components/VictimDashboard';
 import { AnalyticsView } from './components/AnalyticsView';
 import { MapView } from './components/MapView';
 import { AidRequestForm } from './components/AidRequestForm';
+import { AidStatusView } from './components/AidStatusView';
+import { ResourcesView } from './components/ResourcesView';
 import { VolunteerManagement } from './components/VolunteerManagement';
 import { InventoryManagement } from './components/InventoryManagement';
 import { AIAssistant } from './components/AIAssistant';
@@ -201,21 +203,9 @@ function App() {
         case 'request':  // Victim navigation uses 'request'
           return <AidRequestForm user={user} onSuccess={() => setActiveView('dashboard')} />;
         case 'status':  // Victim navigation uses 'status'
-          // TODO: Create AidStatusView component
-          return (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Aid Request Status</h2>
-              <p className="text-muted-foreground">Track your aid requests here.</p>
-            </div>
-          );
+          return <AidStatusView user={user} />;
         case 'resources':  // Victim navigation uses 'resources'
-          // TODO: Create ResourcesView component
-          return (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Emergency Resources</h2>
-              <p className="text-muted-foreground">Find nearby emergency resources and shelters.</p>
-            </div>
-          );
+          return <ResourcesView user={user} />;
         case 'volunteer-management':
           return <VolunteerManagement user={user} />;
         case 'inventory':
