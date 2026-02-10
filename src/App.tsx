@@ -11,6 +11,8 @@ import { MapView } from './components/MapView';
 import { AidRequestForm } from './components/AidRequestForm';
 import { AidStatusView } from './components/AidStatusView';
 import { ResourcesView } from './components/ResourcesView';
+import { MyTasksView } from './components/MyTasksView';
+import { AvailableTasksView } from './components/AvailableTasksView';
 import { VolunteerManagement } from './components/VolunteerManagement';
 import { InventoryManagement } from './components/InventoryManagement';
 import { AIAssistant } from './components/AIAssistant';
@@ -27,6 +29,8 @@ export type ActiveView =
   | 'request'
   | 'status'
   | 'resources'
+  | 'available-tasks'
+  | 'my-tasks'
   | 'volunteer-management'
   | 'inventory';
 
@@ -206,6 +210,10 @@ function App() {
           return <AidStatusView user={user} />;
         case 'resources':  // Victim navigation uses 'resources'
           return <ResourcesView user={user} />;
+        case 'available-tasks':
+          return <AvailableTasksView user={user} />;
+        case 'my-tasks':
+          return <MyTasksView user={user} />;
         case 'volunteer-management':
           return <VolunteerManagement user={user} />;
         case 'inventory':
