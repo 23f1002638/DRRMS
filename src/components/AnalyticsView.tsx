@@ -1,77 +1,61 @@
-import React, { useState } from 'react';
-import { User } from './AuthSystem';
+import { useState } from 'react';
+import { useDetailedAnalytics } from '../hooks/useAdminData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
   Area,
-  AreaChart
+  AreaChart,
+  BarChart,
+  Legend
 } from 'recharts';
-import { 
-  Download, 
-  Filter, 
-  TrendingUp, 
-  Users, 
-  Package, 
+import {
+  Download,
+  Filter,
+  TrendingUp,
+  Package,
   DollarSign,
-  Calendar
+  Calendar,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const donationData = [
-  { month: 'Jan', amount: 45000, donors: 120 },
-  { month: 'Feb', amount: 52000, donors: 135 },
-  { month: 'Mar', amount: 48000, donors: 128 },
-  { month: 'Apr', amount: 61000, donors: 156 },
-  { month: 'May', amount: 55000, donors: 142 },
-  { month: 'Jun', amount: 67000, donors: 178 },
-];
-
-const resourceDistribution = [
-  { name: 'Medical Supplies', value: 35, color: '#3b82f6' },
-  { name: 'Food & Water', value: 28, color: '#10b981' },
-  { name: 'Shelter Materials', value: 20, color: '#f59e0b' },
-  { name: 'Clothing', value: 12, color: '#ef4444' },
-  { name: 'Other', value: 5, color: '#8b5cf6' },
-];
-
-const responseTime = [
-  { day: 'Mon', emergency: 45, normal: 120 },
-  { day: 'Tue', emergency: 38, normal: 98 },
-  { day: 'Wed', emergency: 52, normal: 145 },
-  { day: 'Thu', emergency: 41, normal: 110 },
-  { day: 'Fri', emergency: 35, normal: 95 },
-  { day: 'Sat', emergency: 42, normal: 125 },
-  { day: 'Sun', emergency: 48, normal: 115 },
-];
-
-const volunteerActivity = [
-  { time: '6 AM', active: 45 },
-  { time: '9 AM', active: 89 },
-  { time: '12 PM', active: 156 },
-  { time: '3 PM', active: 178 },
-  { time: '6 PM', active: 134 },
-  { time: '9 PM', active: 67 },
-];
-
-interface AnalyticsViewProps {
-  user: User;
-}
-
-export function AnalyticsView({ user }: AnalyticsViewProps) {
+export function AnalyticsView() {
+  const { data, loading, refetch } = useDetailedAnalytics();
   const [timeRange, setTimeRange] = useState('last30days');
+
+  if (loading) {
+    return (
+      <div className="p-12 flex items-center justify-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-lg text-muted-foreground">Loading analytics...</span>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800">Failed to load analytics data. <Button variant="link" onClick={() => refetch()}>Retry</Button></p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -94,11 +78,11 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
               <SelectItem value="lastyear">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.info('Filters coming soon')}>
             <Filter className="h-4 w-4 mr-2" />
             Filters
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.info('Export coming soon')}>
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -113,41 +97,41 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94.2%</div>
-            <p className="text-xs text-green-600">+2.1% from last month</p>
+            <div className="text-2xl font-bold">{data.keyMetrics.responseRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">Based on total requests</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+            <CardTitle className="text-sm font-medium">Est. Response Time</CardTitle>
             <Calendar className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42 min</div>
-            <p className="text-xs text-green-600">-8 min improvement</p>
+            <div className="text-2xl font-bold">~45 min</div>
+            <p className="text-xs text-green-600">Target: &lt; 60 min</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resource Efficiency</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Resources</CardTitle>
             <Package className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">87.5%</div>
-            <p className="text-xs text-orange-600">+1.2% optimization</p>
+            <div className="text-2xl font-bold">{data.keyMetrics.totalResources}</div>
+            <p className="text-xs text-muted-foreground">Emergency centers</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost per Beneficiary</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Donations</CardTitle>
             <DollarSign className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$127</div>
-            <p className="text-xs text-green-600">-$15 reduction</p>
+            <div className="text-2xl font-bold">${data.keyMetrics.totalDonations.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">All time contribution</p>
           </CardContent>
         </Card>
       </div>
@@ -162,21 +146,22 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={donationData}>
+                <AreaChart data={data.donationTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis yAxisId="left" />
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip />
-                  <Area 
+                  <Area
                     yAxisId="left"
-                    type="monotone" 
-                    dataKey="amount" 
-                    stroke="#3b82f6" 
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="#3b82f6"
                     fill="#3b82f6"
                     fillOpacity={0.1}
+                    name="Amount ($)"
                   />
-                  <Bar yAxisId="right" dataKey="donors" fill="#10b981" opacity={0.7} />
+                  <Bar yAxisId="right" dataKey="donors" fill="#10b981" opacity={0.7} name="Donations" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -186,22 +171,22 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
         {/* Resource Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Resource Distribution</CardTitle>
-            <CardDescription>Breakdown of aid categories</CardDescription>
+            <CardTitle>Request Categories</CardTitle>
+            <CardDescription>Breakdown of aid requests by type</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={resourceDistribution}
+                    data={data.resourceDistribution}
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   >
-                    {resourceDistribution.map((entry, index) => (
+                    {data.resourceDistribution.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -212,22 +197,25 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
           </CardContent>
         </Card>
 
-        {/* Response Time Analysis */}
+        {/* Task Status Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Response Time Analysis</CardTitle>
-            <CardDescription>Emergency vs normal request handling</CardDescription>
+            <CardTitle>Task Status</CardTitle>
+            <CardDescription>Real-time volunteer task distribution</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={responseTime}>
+                <BarChart data={data.taskStatusDistribution}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
+                  <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="emergency" fill="#ef4444" name="Emergency (min)" />
-                  <Bar dataKey="normal" fill="#3b82f6" name="Normal (min)" />
+                  <Bar dataKey="value" name="Tasks">
+                    {data.taskStatusDistribution.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -235,74 +223,36 @@ export function AnalyticsView({ user }: AnalyticsViewProps) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Volunteer Activity */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Volunteer Activity Pattern</CardTitle>
-            <CardDescription>Active volunteers throughout the day</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={volunteerActivity}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="active" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
-                    dot={{ fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Performance Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance Summary</CardTitle>
-            <CardDescription>Key metrics overview</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Requests Completed</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="default">156</Badge>
-                  <span className="text-sm text-green-600">+23%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Active Volunteers</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">189</Badge>
-                  <span className="text-sm text-blue-600">+12%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Resources Distributed</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">2.4k</Badge>
-                  <span className="text-sm text-green-600">+18%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Beneficiaries Served</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="default">1.2k</Badge>
-                  <span className="text-sm text-green-600">+31%</span>
-                </div>
+      {/* Performance Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>System Status Summary</CardTitle>
+          <CardDescription>Real-time system health</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Database Connection</span>
+              <div className="flex items-center space-x-2">
+                <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Healthy</Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Active Volunteers</span>
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary">{data.keyMetrics.activeVolunteers} Online</Badge>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Pending Requests</span>
+              <div className="flex items-center space-x-2">
+                {/* We could pass this in or it updates via rtc elsewhere */}
+                <span className="text-sm text-yellow-600">Monitoring...</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

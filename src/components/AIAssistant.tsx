@@ -24,26 +24,49 @@ interface Message {
   timestamp: Date;
 }
 
-export function AIAssistant() {
+interface AIAssistantProps {
+  activeView?: string;
+  userRole?: string;
+}
+
+export function AIAssistant({ activeView, userRole }: AIAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'assistant',
-      content: 'Hello! I\'m your AI assistant for disaster relief operations. I can help you with emergency procedures, resource allocation, volunteer coordination, and more. How can I assist you today?',
+      content: `Hello! I'm your AI assistant for disaster relief operations.${userRole ? ` I see you're logged in as a ${userRole}.` : ''} I can help you with emergency procedures, resource allocation, and more. How can I assist you today?`,
       timestamp: new Date()
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const quickActions = [
-    'Emergency protocols',
-    'Find volunteers',
-    'Check supplies',
-    'Contact emergency services'
-  ];
+
+  // Dynamic quick actions based on context
+  const getQuickActions = () => {
+    switch (activeView) {
+      case 'map':
+        return ['Find nearest shelter', 'Show medical centers', 'Traffic status', 'Weather update'];
+      case 'inventory':
+        return ['Low stock alert', 'Add new item', 'Inventory report', 'Supply request'];
+      case 'available-tasks':
+        return ['Find high priority', 'My assigned tasks', 'Task guidelines', 'Report issue'];
+      case 'analytics':
+        return ['Export report', 'Volunteer stats', 'Donation summary', 'Resource efficiency'];
+      default:
+        return [
+          'Emergency protocols',
+          'Find volunteers',
+          'Check supplies',
+          'Contact emergency services'
+        ];
+    }
+  };
+
+  const quickActions = getQuickActions();
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -74,24 +97,33 @@ export function AIAssistant() {
 
   const getAIResponse = (input: string): string => {
     const lowerInput = input.toLowerCase();
-    
+
+    // Context-specific responses
+    if (activeView === 'inventory' && (lowerInput.includes('add') || lowerInput.includes('create'))) {
+      return 'To add a new item, click the "Add Item" button in the top right corner. You\'ll need to specify the category, quantity, and location.';
+    }
+
+    if (activeView === 'map' && lowerInput.includes('shelter')) {
+      return 'I can highlight shelter locations on the map. The nearest shelter with capacity is the "Central Emergency Shelter" (2.5km away).';
+    }
+
     if (lowerInput.includes('emergency') || lowerInput.includes('urgent')) {
       return 'For immediate emergencies, call 911. For aid requests, I can guide you through the emergency aid request form. Would you like me to help you submit a request or connect you with emergency services?';
     }
-    
+
     if (lowerInput.includes('volunteer')) {
       return 'I can help you find available volunteers in your area or assist with volunteer registration. Current volunteer availability: 23 active volunteers within 5 miles. Would you like me to assign volunteers to a specific task?';
     }
-    
+
     if (lowerInput.includes('supplies') || lowerInput.includes('inventory')) {
       return 'Current supply status: Medical supplies (85% stocked), Food & Water (72% stocked), Shelter materials (91% stocked). Would you like detailed inventory information or help with resource allocation?';
     }
-    
+
     if (lowerInput.includes('status') || lowerInput.includes('track')) {
       return 'I can help you track aid requests, volunteer assignments, or resource distribution. Please specify what you\'d like to track, and I\'ll provide real-time updates.';
     }
-    
-    return 'I understand you need assistance with disaster relief operations. I can help with emergency protocols, resource management, volunteer coordination, and status tracking. Could you provide more specific details about what you need help with?';
+
+    return `I see you are in the ${activeView?.replace('-', ' ') || 'dashboard'} section. How can I assist you with ${activeView?.replace('-', ' ') || 'disaster relief'} operations specifically?`;
   };
 
   const handleQuickAction = (action: string) => {
@@ -120,9 +152,9 @@ export function AIAssistant() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ 
-        opacity: 1, 
-        y: 0, 
+      animate={{
+        opacity: 1,
+        y: 0,
         scale: 1,
         height: isMinimized ? 'auto' : '500px'
       }}
@@ -194,11 +226,10 @@ export function AIAssistant() {
                         className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] p-3 rounded-lg ${
-                            message.type === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-muted'
-                          }`}
+                          className={`max-w-[80%] p-3 rounded-lg ${message.type === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-muted'
+                            }`}
                         >
                           <div className="flex items-start space-x-2">
                             {message.type === 'assistant' && (
@@ -210,11 +241,10 @@ export function AIAssistant() {
                             <div>
                               <p className="text-sm">{message.content}</p>
                               <p
-                                className={`text-xs mt-1 ${
-                                  message.type === 'user'
-                                    ? 'text-blue-100'
-                                    : 'text-muted-foreground'
-                                }`}
+                                className={`text-xs mt-1 ${message.type === 'user'
+                                  ? 'text-blue-100'
+                                  : 'text-muted-foreground'
+                                  }`}
                               >
                                 {message.timestamp.toLocaleTimeString([], {
                                   hour: '2-digit',
@@ -226,7 +256,7 @@ export function AIAssistant() {
                         </div>
                       </div>
                     ))}
-                    
+
                     {isTyping && (
                       <div className="flex justify-start">
                         <div className="bg-muted p-3 rounded-lg max-w-[80%]">

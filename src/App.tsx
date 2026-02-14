@@ -20,6 +20,7 @@ import { ThemeProvider } from './components/ThemeProvider';
 import { LandingPage } from './components/LandingPage';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
+import { ProfileView } from './components/ProfileView';
 
 export type ActiveView =
   | 'dashboard'
@@ -32,7 +33,8 @@ export type ActiveView =
   | 'available-tasks'
   | 'my-tasks'
   | 'volunteer-management'
-  | 'inventory';
+  | 'inventory'
+  | 'profile';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -171,7 +173,7 @@ function App() {
     try {
       switch (user.role) {
         case 'admin':
-          return <AdminDashboard user={user} />;
+          return <AdminDashboard user={user} onViewChange={(view) => setActiveView(view as ActiveView)} />;
         case 'donor':
           return <DonorDashboard user={user} />;
         case 'volunteer':
@@ -200,7 +202,7 @@ function App() {
         case 'dashboard':
           return renderDashboard();
         case 'analytics':
-          return <AnalyticsView user={user} />;
+          return <AnalyticsView />;
         case 'map':
           return <MapView user={user} />;
         case 'aid-request':
@@ -218,6 +220,8 @@ function App() {
           return <VolunteerManagement user={user} />;
         case 'inventory':
           return <InventoryManagement user={user} />;
+        case 'profile':
+          return <ProfileView user={user} />;
         default:
           return renderDashboard();
       }
@@ -236,7 +240,7 @@ function App() {
     <ThemeProvider>
       <div className="min-h-screen bg-background">
         <Header
-          user={user}
+          user={user!}
           activeView={activeView}
           onViewChange={(view: string) => setActiveView(view as ActiveView)}
           onLogout={handleLogout}
@@ -244,7 +248,7 @@ function App() {
         <main className="pt-16">
           {renderActiveView()}
         </main>
-        <AIAssistant />
+        <AIAssistant activeView={activeView} userRole={user?.role} />
         <Toaster />
       </div>
     </ThemeProvider>

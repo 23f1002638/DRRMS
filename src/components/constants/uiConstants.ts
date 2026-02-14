@@ -37,25 +37,25 @@ export const priorityLevels = [
 ];
 
 export const aidTypes = [
-  { 
-    id: 'food', 
-    label: 'Food & Water', 
-    description: 'Emergency food supplies and clean water' 
+  {
+    id: 'food',
+    label: 'Food & Water',
+    description: 'Emergency food supplies and clean water'
   },
-  { 
-    id: 'medical', 
-    label: 'Medical Aid', 
-    description: 'Medical supplies and healthcare assistance' 
+  {
+    id: 'medical',
+    label: 'Medical Aid',
+    description: 'Medical supplies and healthcare assistance'
   },
-  { 
-    id: 'shelter', 
-    label: 'Shelter', 
-    description: 'Temporary housing and shelter materials' 
+  {
+    id: 'shelter',
+    label: 'Shelter',
+    description: 'Temporary housing and shelter materials'
   },
-  { 
-    id: 'emergency', 
-    label: 'Emergency Rescue', 
-    description: 'Immediate rescue and evacuation' 
+  {
+    id: 'emergency',
+    label: 'Emergency Rescue',
+    description: 'Immediate rescue and evacuation'
   },
 ];
 
@@ -65,6 +65,7 @@ export const navigationItems = {
     { id: 'analytics', label: 'Analytics' },
     { id: 'volunteers', label: 'Volunteers' },
     { id: 'inventory', label: 'Inventory' },
+    { id: 'resources', label: 'Resources' },
     { id: 'map', label: 'Map View' },
   ],
   donor: [

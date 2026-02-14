@@ -1,73 +1,31 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User } from './AuthSystem';
+import { useVolunteers } from '../hooks/useAdminData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { 
-  Users, 
-  MapPin, 
-  Clock, 
-  CheckCircle, 
+import {
+  Users,
+  MapPin,
+  Clock,
+  CheckCircle,
   AlertTriangle,
   Search,
-  Filter,
   UserPlus,
   MessageSquare,
-  Phone
+  Phone,
+  Loader2,
+  Mail
 } from 'lucide-react';
-
-const mockVolunteers = [
-  {
-    id: 1,
-    name: 'Sarah Johnson',
-    email: 'sarah.j@email.com',
-    phone: '(555) 123-4567',
-    status: 'active',
-    location: 'Zone A - Sector 3',
-    skills: ['Medical', 'Translation'],
-    hoursThisWeek: 24,
-    assignedTasks: 3,
-    completedTasks: 15,
-    joinDate: '2024-01-15',
-    lastActive: '5 min ago'
-  },
-  {
-    id: 2,
-    name: 'Michael Chen',
-    email: 'mike.chen@email.com',
-    phone: '(555) 234-5678',
-    status: 'available',
-    location: 'Zone B - Sector 1',
-    skills: ['Logistics', 'Heavy Lifting'],
-    hoursThisWeek: 18,
-    assignedTasks: 2,
-    completedTasks: 23,
-    joinDate: '2024-02-01',
-    lastActive: '2 hours ago'
-  },
-  {
-    id: 3,
-    name: 'Emily Rodriguez',
-    email: 'emily.r@email.com',
-    phone: '(555) 345-6789',
-    status: 'off_duty',
-    location: 'Zone C - Sector 2',
-    skills: ['Child Care', 'Cooking'],
-    hoursThisWeek: 0,
-    assignedTasks: 0,
-    completedTasks: 8,
-    joinDate: '2024-03-10',
-    lastActive: '1 day ago'
-  },
-];
+import { toast } from 'sonner';
 
 const statusColors = {
   active: 'bg-green-100 text-green-800',
   available: 'bg-blue-100 text-blue-800',
-  off_duty: 'bg-gray-100 text-gray-800',
+  offline: 'bg-gray-100 text-gray-800',
   busy: 'bg-yellow-100 text-yellow-800',
 };
 
@@ -75,17 +33,47 @@ interface VolunteerManagementProps {
   user: User;
 }
 
-export function VolunteerManagement({ user }: VolunteerManagementProps) {
+export function VolunteerManagement({ }: VolunteerManagementProps) {
+  const { volunteers, loading, error } = useVolunteers();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedVolunteer, setSelectedVolunteer] = useState<typeof mockVolunteers[0] | null>(null);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
 
-  const filteredVolunteers = mockVolunteers.filter(volunteer => {
+  const filteredVolunteers = volunteers.filter(volunteer => {
     const matchesSearch = volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         volunteer.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+      volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = statusFilter === 'all' || volunteer.status === statusFilter;
     return matchesSearch && matchesFilter;
   });
+
+  // Calculate stats from real data
+  const totalVolunteers = volunteers.length;
+  const activeToday = volunteers.filter(v => v.status === 'active').length;
+  // This metric would require aggregation of all tasks duration, simplified for now
+  const activeTasks = volunteers.reduce((sum, v) => sum + v.assigned_tasks, 0);
+  const availableVolunteers = volunteers.filter(v => v.status === 'available').length;
+
+  if (loading) {
+    return (
+      <div className="p-12 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-lg text-muted-foreground">Loading volunteer data...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <p className="text-red-800">Error loading volunteers: {error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -96,9 +84,9 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
             Manage volunteer assignments and track performance
           </p>
         </div>
-        <Button>
+        <Button onClick={() => toast.info('Invite functionality coming soon')}>
           <UserPlus className="h-4 w-4 mr-2" />
-          Add Volunteer
+          Invite Volunteer
         </Button>
       </div>
 
@@ -109,7 +97,7 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold">245</p>
+                <p className="text-2xl font-bold">{totalVolunteers}</p>
                 <p className="text-sm text-muted-foreground">Total Volunteers</p>
               </div>
             </div>
@@ -120,8 +108,8 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold">189</p>
-                <p className="text-sm text-muted-foreground">Active Today</p>
+                <p className="text-2xl font-bold">{activeToday}</p>
+                <p className="text-sm text-muted-foreground">Active Now</p>
               </div>
             </div>
           </CardContent>
@@ -131,8 +119,8 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-2xl font-bold">1,247</p>
-                <p className="text-sm text-muted-foreground">Hours This Week</p>
+                <p className="text-2xl font-bold">{activeTasks}</p>
+                <p className="text-sm text-muted-foreground">Active Tasks</p>
               </div>
             </div>
           </CardContent>
@@ -140,10 +128,10 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-sm text-muted-foreground">Need Assignment</p>
+                <p className="text-2xl font-bold">{availableVolunteers}</p>
+                <p className="text-sm text-muted-foreground">Available</p>
               </div>
             </div>
           </CardContent>
@@ -160,7 +148,7 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search volunteers..."
+                    placeholder="Search name or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9 w-48"
@@ -174,7 +162,7 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="off_duty">Off Duty</SelectItem>
+                    <SelectItem value="offline">Offline</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -182,54 +170,53 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredVolunteers.map((volunteer) => (
-                <div
-                  key={volunteer.id}
-                  className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                    selectedVolunteer?.id === volunteer.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-                  }`}
-                  onClick={() => setSelectedVolunteer(volunteer)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <Avatar>
-                        <AvatarFallback>
-                          {volunteer.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-medium">{volunteer.name}</h3>
-                          <Badge className={statusColors[volunteer.status as keyof typeof statusColors]}>
-                            {volunteer.status.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{volunteer.email}</p>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className="text-xs text-muted-foreground flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {volunteer.location}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {volunteer.hoursThisWeek}h this week
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {volunteer.skills.map((skill) => (
-                            <Badge key={skill} variant="outline" className="text-xs">
-                              {skill}
+              {filteredVolunteers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No volunteers found matching your criteria
+                </div>
+              ) : (
+                filteredVolunteers.map((volunteer) => (
+                  <div
+                    key={volunteer.id}
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedVolunteer?.id === volunteer.id ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/20' : 'hover:bg-accent/50'
+                      }`}
+                    onClick={() => setSelectedVolunteer(volunteer)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <Avatar>
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {volunteer.name ? volunteer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : 'V'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-medium">{volunteer.name}</h3>
+                            <Badge className={statusColors[volunteer.status as keyof typeof statusColors]}>
+                              {volunteer.status.replace('_', ' ')}
                             </Badge>
-                          ))}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{volunteer.email}</p>
+                          <div className="flex items-center space-x-4 mt-1">
+                            {/* Location would be real in future */}
+                            <span className="text-xs text-muted-foreground flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              Unknown Location
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Joined {new Date(volunteer.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{volunteer.assignedTasks} tasks</p>
-                      <p className="text-xs text-muted-foreground">{volunteer.lastActive}</p>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{volunteer.assigned_tasks} active tasks</p>
+                        <p className="text-xs text-muted-foreground">Last active: {volunteer.last_active}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -241,13 +228,13 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
               <CardHeader>
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarFallback>
-                      {selectedVolunteer.name.split(' ').map(n => n[0]).join('')}
+                    <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                      {selectedVolunteer.name ? selectedVolunteer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) : 'V'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle>{selectedVolunteer.name}</CardTitle>
-                    <CardDescription>Volunteer since {new Date(selectedVolunteer.joinDate).toLocaleDateString()}</CardDescription>
+                    <CardDescription>Volunteer since {new Date(selectedVolunteer.created_at).toLocaleDateString()}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -255,28 +242,36 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Contact Information</h4>
-                    <p className="text-sm text-muted-foreground">{selectedVolunteer.email}</p>
-                    <p className="text-sm text-muted-foreground">{selectedVolunteer.phone}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-2">Performance</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center p-2 bg-blue-50 rounded">
-                        <p className="text-lg font-bold text-blue-600">{selectedVolunteer.completedTasks}</p>
-                        <p className="text-xs text-blue-600">Completed</p>
-                      </div>
-                      <div className="text-center p-2 bg-orange-50 rounded">
-                        <p className="text-lg font-bold text-orange-600">{selectedVolunteer.assignedTasks}</p>
-                        <p className="text-xs text-orange-600">Assigned</p>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      {selectedVolunteer.email}
+                    </div>
+                    {/* Placeholder for Phone */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      <Phone className="h-4 w-4" />
+                      (555) 123-4567
                     </div>
                   </div>
 
                   <div>
+                    <h4 className="font-medium mb-2">Performance</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
+                        <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedVolunteer.completed_tasks}</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">Completed</p>
+                      </div>
+                      <div className="text-center p-2 bg-orange-50 dark:bg-orange-950/20 rounded">
+                        <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{selectedVolunteer.assigned_tasks}</p>
+                        <p className="text-xs text-orange-600 dark:text-orange-400">Assigned</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills Section - Placeholder for now until we have skills in DB */}
+                  <div>
                     <h4 className="font-medium mb-2">Skills</h4>
                     <div className="flex flex-wrap gap-1">
-                      {selectedVolunteer.skills.map((skill) => (
+                      {['General Relief', 'Logistics'].map((skill) => (
                         <Badge key={skill} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
@@ -285,13 +280,13 @@ export function VolunteerManagement({ user }: VolunteerManagementProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Button className="w-full" size="sm">
+                    <Button className="w-full" size="sm" onClick={() => toast.info('Task assignment UI coming soon')}>
                       Assign Task
                     </Button>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => window.location.href = `mailto:${selectedVolunteer.email}`}>
                         <MessageSquare className="h-4 w-4 mr-1" />
-                        Message
+                        Email
                       </Button>
                       <Button variant="outline" size="sm" className="flex-1">
                         <Phone className="h-4 w-4 mr-1" />

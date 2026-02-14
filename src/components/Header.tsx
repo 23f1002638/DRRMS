@@ -21,6 +21,8 @@ import {
   Bell,
   Menu
 } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
+import { ScrollArea } from './ui/scroll-area';
 import { navigationItems, roleColors } from './constants/uiConstants';
 
 interface HeaderProps {
@@ -40,6 +42,12 @@ const roleIcons = {
 export function Header({ user, activeView, onViewChange, onLogout }: HeaderProps) {
   const Icon = roleIcons[user.role];
   const navigation = navigationItems[user.role];
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead
+  } = useNotifications();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg supports-[backdrop-filter]:bg-background/90 border-b border-border/50 shadow-md transition-all duration-300">
@@ -63,8 +71,8 @@ export function Header({ user, activeView, onViewChange, onLogout }: HeaderProps
                 size="sm"
                 onClick={() => onViewChange(item.id)}
                 className={`text-sm font-medium transition-all duration-200 ${activeView === item.id
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
-                    : 'hover:bg-muted/50'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                  : 'hover:bg-muted/50'
                   }`}
               >
                 {item.label}
@@ -76,10 +84,69 @@ export function Header({ user, activeView, onViewChange, onLogout }: HeaderProps
         <div className="flex items-center space-x-4">
           <ThemeToggle />
 
-          <Button variant="ghost" size="sm" className="relative transition-all duration-200 hover:scale-105 hover:bg-muted/50">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-gradient-to-br from-red-500 to-red-600 rounded-full text-[10px] text-white flex items-center justify-center font-bold shadow-md">3</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative transition-all duration-200 hover:scale-105 hover:bg-muted/50 h-9 w-9">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-3 w-3 bg-red-600 rounded-full text-[9px] text-white flex items-center justify-center font-bold shadow-md ring-2 ring-background">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <div className="flex items-center justify-between p-3 border-b">
+                <p className="font-semibold text-sm">Notifications</p>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className="h-auto px-2 text-xs text-blue-600 hover:text-blue-700"
+                    onClick={() => markAllAsRead()}
+                  >
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="h-[300px]">
+                {notifications.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No notifications</p>
+                  </div>
+                ) : (
+                  <div className="py-1">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer border-b last:border-0 ${!notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                          }`}
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <p className={`text-sm ${!notification.read ? 'font-semibold' : 'font-medium'}`}>
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          {!notification.read && (
+                            <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0 mt-1.5" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -108,9 +175,9 @@ export function Header({ user, activeView, onViewChange, onLogout }: HeaderProps
                 </Badge>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem onClick={() => onViewChange('profile')} className="cursor-pointer">
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
+                My Profile
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onLogout} className="text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />

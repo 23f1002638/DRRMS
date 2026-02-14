@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useClaimTask } from '../hooks/useDisasterData';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -48,11 +49,11 @@ const taskTypeConfig = {
     emergency: { label: 'Emergency Response', icon: '🚨' }
 };
 
-export function AvailableTasksView({ user }: AvailableTasksViewProps) {
+export function AvailableTasksView({ user: _user }: AvailableTasksViewProps) {
     const [tasks, setTasks] = useState<VolunteerTask[]>([]);
     const [filteredTasks, setFilteredTasks] = useState<VolunteerTask[]>([]);
     const [loading, setLoading] = useState(true);
-    const [claiming, setClaiming] = useState<string | null>(null);
+    const { claimTask: executeClaim, claiming, error: _claimError } = useClaimTask();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterPriority, setFilterPriority] = useState<string>('all');
 
@@ -130,32 +131,12 @@ export function AvailableTasksView({ user }: AvailableTasksViewProps) {
         setFilteredTasks(filtered);
     }
 
-    async function claimTask(taskId: string) {
-        try {
-            setClaiming(taskId);
-
-            const { error } = await supabase
-                .from('volunteer_tasks')
-                .update({
-                    volunteer_id: user.id,
-                    status: 'claimed',
-                    claimed_at: new Date().toISOString()
-                })
-                .eq('id', taskId)
-                .eq('status', 'available'); // Prevent double-claiming
-
-            if (error) throw error;
-
-            toast.success('Task claimed successfully! 🎯', {
-                description: 'Check "My Tasks" to see your active assignments'
-            });
-
+    async function handleClaimTask(taskId: string) {
+        const result = await executeClaim(taskId);
+        if (result && result.success) {
+            // Toast is handled by the hook, but we can add extra context if needed or just let it be.
+            // The hook handles success toast.
             fetchTasks();
-        } catch (error) {
-            console.error('Error claiming task:', error);
-            toast.error('Failed to claim task. It may have been claimed by another volunteer.');
-        } finally {
-            setClaiming(null);
         }
     }
 
@@ -285,11 +266,11 @@ export function AvailableTasksView({ user }: AvailableTasksViewProps) {
 
                                     <div className="flex gap-2 flex-wrap">
                                         <Button
-                                            onClick={() => claimTask(task.id)}
-                                            disabled={claiming === task.id}
+                                            onClick={() => handleClaimTask(task.id)}
+                                            disabled={claiming}
                                             className="flex-1 md:flex-none"
                                         >
-                                            {claiming === task.id ? (
+                                            {claiming ? (
                                                 <>
                                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                                     Claiming...

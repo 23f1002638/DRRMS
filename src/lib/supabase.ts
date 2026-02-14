@@ -63,11 +63,10 @@ export interface InventoryItem {
     category: RequestCategory;
     quantity: number;
     unit: string;
-    threshold_limit: number;
+    min_threshold: number; // Changed from threshold_limit to match DB
     status: InventoryStatus;
     location?: string;
-    supplier?: string;
-    expiry_date?: string;
+    last_updated_by?: string;
     created_at: string;
     updated_at: string;
 }

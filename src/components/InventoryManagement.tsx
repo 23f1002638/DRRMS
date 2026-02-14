@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User } from './AuthSystem';
 import { useInventory } from '../hooks/useDisasterData';
 import { supabase } from '../lib/supabase';
@@ -18,18 +18,21 @@ import {
   Truck,
   BarChart3,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const categoryColors = {
+const categoryColors: Record<string, string> = {
   food: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400',
   medical: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400',
   shelter: 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-400',
   emergency: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+  clothing: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+  other: 'bg-gray-50 text-gray-700 dark:bg-gray-950 dark:text-gray-400',
 };
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   available: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   low_stock: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   out_of_stock: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -49,9 +52,21 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
   const [restockAmount, setRestockAmount] = useState('');
   const [restocking, setRestocking] = useState(false);
 
+  // Add Item State
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemData, setNewItemData] = useState({
+    item_name: '',
+    category: 'food',
+    quantity: 0,
+    unit: 'units',
+    min_threshold: 10,
+    location: '',
+  });
+  const [adding, setAdding] = useState(false);
+
   const filteredInventory = inventory.filter(item => {
     const matchesSearch = item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.supplier && item.supplier.toLowerCase().includes(searchTerm.toLowerCase()));
+      (item.location && item.location.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
@@ -83,7 +98,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
       let newStatus = selectedItem.status;
       if (newQuantity === 0) {
         newStatus = 'out_of_stock';
-      } else if (newQuantity < selectedItem.threshold_limit) {
+      } else if (newQuantity < (selectedItem.min_threshold || 10)) {
         newStatus = 'low_stock';
       } else {
         newStatus = 'available';
@@ -106,14 +121,67 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
       });
 
       setRestockAmount('');
-      // Refetch will happen automatically via real-time subscription
-      // but we can also manually trigger it for immediate feedback
       await refetch();
     } catch (err) {
       console.error('Restock error:', err);
       toast.error(err instanceof Error ? err.message : 'Failed to restock item');
     } finally {
       setRestocking(false);
+    }
+  };
+
+  const handleAddItem = async () => {
+    if (!newItemData.item_name || !newItemData.quantity || !newItemData.unit) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setAdding(true);
+    try {
+      let status = 'available';
+      if (newItemData.quantity === 0) status = 'out_of_stock';
+      else if (newItemData.quantity < newItemData.min_threshold) status = 'low_stock';
+
+      const { error: insertError } = await supabase
+        .from('inventory')
+        .insert({
+          item_name: newItemData.item_name,
+          category: newItemData.category,
+          quantity: newItemData.quantity,
+          unit: newItemData.unit,
+          min_threshold: newItemData.min_threshold,
+          location: newItemData.location,
+          status: status,
+          last_updated_by: user.id
+        });
+
+      // Note: If 'supplier' or 'threshold_limit' (vs min_threshold) mismatch schema, it will error.
+      // Converting based on verified schema usage from view_file earlier implies 'min_threshold' in DB but code used 'threshold_limit' in types.
+      // Let's assume the hook maps it or we need to be careful.
+      // Looking at useInventory hook, it selects *. 
+      // Looking at schema: min_threshold INTEGER DEFAULT 10.
+      // Looking at InventoryItem type: it might expect threshold_limit.
+      // Let's use specific insert keys from schema.
+
+      if (insertError) throw insertError;
+
+      toast.success('Item added successfully');
+      setIsAddingItem(false);
+      setNewItemData({
+        item_name: '',
+        category: 'food',
+        quantity: 0,
+        unit: 'units',
+        min_threshold: 10,
+        location: ''
+      });
+      refetch();
+
+    } catch (err: any) {
+      console.error('Error adding item:', err);
+      toast.error('Failed to add item: ' + err.message);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -156,7 +224,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto relative">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold mb-2">Inventory Management</h1>
@@ -173,12 +241,104 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
             <Truck className="h-4 w-4 mr-2" />
             Request Delivery
           </Button>
-          <Button>
+          <Button onClick={() => setIsAddingItem(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item
           </Button>
         </div>
       </div>
+
+      {/* Add Item Modal Overlay */}
+      {isAddingItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg bg-background">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Add New Item</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setIsAddingItem(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Item Name</label>
+                  <Input
+                    value={newItemData.item_name}
+                    onChange={(e) => setNewItemData({ ...newItemData, item_name: e.target.value })}
+                    placeholder="e.g., Water Bottles"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select
+                    value={newItemData.category}
+                    onValueChange={(val) => setNewItemData({ ...newItemData, category: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="food">Food</SelectItem>
+                      <SelectItem value="medical">Medical</SelectItem>
+                      <SelectItem value="shelter">Shelter</SelectItem>
+                      <SelectItem value="clothing">Clothing</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Quantity</label>
+                  <Input
+                    type="number"
+                    value={newItemData.quantity}
+                    onChange={(e) => setNewItemData({ ...newItemData, quantity: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Unit</label>
+                  <Input
+                    value={newItemData.unit}
+                    onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
+                    placeholder="e.g., boxes, kg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Threshold (Low Stock)</label>
+                  <Input
+                    type="number"
+                    value={newItemData.min_threshold}
+                    onChange={(e) => setNewItemData({ ...newItemData, min_threshold: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Location</label>
+                  <Input
+                    value={newItemData.location}
+                    onChange={(e) => setNewItemData({ ...newItemData, location: e.target.value })}
+                    placeholder="Warehouse A"
+                  />
+                </div>
+              </div>
+
+              {/* Supplier field removed to match schema */}
+
+              <div className="pt-4 flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsAddingItem(false)}>Cancel</Button>
+                <Button onClick={handleAddItem} disabled={adding}>
+                  {adding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Add Item
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -283,8 +443,8 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                   <div
                     key={item.id}
                     className={`p-4 rounded-lg border cursor-pointer transition-colors ${selectedItem?.id === item.id
-                        ? 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
-                        : 'hover:bg-accent/50'
+                      ? 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
+                      : 'hover:bg-accent/50'
                       }`}
                     onClick={() => setSelectedItem(item)}
                   >
@@ -292,10 +452,10 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
                           <h3 className="font-medium">{item.item_name}</h3>
-                          <Badge className={categoryColors[item.category as keyof typeof categoryColors]}>
+                          <Badge className={categoryColors[item.category] || categoryColors.other}>
                             {item.category}
                           </Badge>
-                          <Badge className={statusColors[item.status as keyof typeof statusColors]}>
+                          <Badge className={statusColors[item.status] || statusColors.available}>
                             {item.status.replace('_', ' ')}
                           </Badge>
                         </div>
@@ -305,14 +465,14 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
                             <span>Stock Level</span>
-                            <span>{item.quantity}/{item.threshold_limit * 3} {item.unit}</span>
+                            <span>{item.quantity}/{(item.min_threshold || 10) * 3} {item.unit}</span>
                           </div>
                           <Progress
-                            value={getStockPercentage(item.quantity, item.threshold_limit)}
+                            value={getStockPercentage(item.quantity, item.min_threshold || 10)}
                             className="h-2"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Threshold: {item.threshold_limit} {item.unit}
+                            Threshold: {item.min_threshold || 10} {item.unit}
                           </p>
                         </div>
                       </div>
@@ -356,7 +516,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                       </div>
                       <div className="text-center p-3 bg-orange-50 dark:bg-orange-950 rounded-lg">
                         <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {selectedItem.threshold_limit}
+                          {selectedItem.min_threshold || 10}
                         </p>
                         <p className="text-xs text-orange-600 dark:text-orange-400">Threshold</p>
                       </div>
@@ -370,12 +530,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                     </p>
                   </div>
 
-                  {selectedItem.supplier && (
-                    <div>
-                      <h4 className="font-medium mb-2">Supplier</h4>
-                      <p className="text-sm text-muted-foreground">{selectedItem.supplier}</p>
-                    </div>
-                  )}
+
 
                   <div className="space-y-2 pt-2 border-t">
                     <h4 className="font-medium">Restock Item</h4>
@@ -460,6 +615,6 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
           </Card>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

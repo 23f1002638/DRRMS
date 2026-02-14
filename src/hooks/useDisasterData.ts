@@ -438,3 +438,115 @@ export function useAnalytics() {
 
     return { analytics, loading, error, refetch: fetchAnalytics };
 }
+
+// =====================================================
+// MAP DATA HOOK
+// =====================================================
+
+export interface MapLocation {
+    id: string;
+    type: 'request' | 'resource' | 'volunteer' | 'task';
+    lat: number;
+    lng: number;
+    title: string;
+    description: string;
+    status: string;
+    updated_at: string;
+}
+
+export function useMapData() {
+    const [locations, setLocations] = useState<MapLocation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    async function fetchMapData() {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const [requestsRes, resourcesRes, tasksRes] = await Promise.all([
+                supabase.from('aid_requests').select('*').neq('status', 'cancelled'),
+                supabase.from('resources').select('*'),
+                supabase.from('volunteer_tasks').select('*, profiles(full_name)').neq('status', 'completed')
+            ]);
+
+            if (requestsRes.error) throw requestsRes.error;
+            if (resourcesRes.error) throw resourcesRes.error;
+            // Tasks error might be acceptable if RLS blocks it, but we are admin usually
+
+            const mapLocations: MapLocation[] = [];
+
+            // Process Requests
+            (requestsRes.data || []).forEach((req: any) => {
+                if (req.location && req.location.lat && req.location.lng) {
+                    mapLocations.push({
+                        id: req.id,
+                        type: 'request',
+                        lat: req.location.lat,
+                        lng: req.location.lng,
+                        title: req.aid_type.charAt(0).toUpperCase() + req.aid_type.slice(1) + ' Request',
+                        description: req.description || 'No description',
+                        status: req.status === 'pending' ? 'urgent' : 'active',
+                        updated_at: req.updated_at
+                    });
+                }
+            });
+
+            // Process Resources
+            (resourcesRes.data || []).forEach((res: any) => {
+                if (res.location && res.location.lat && res.location.lng) {
+                    mapLocations.push({
+                        id: res.id,
+                        type: 'resource',
+                        lat: res.location.lat,
+                        lng: res.location.lng,
+                        title: res.name,
+                        description: `${res.type} - Capacity: ${res.capacity || 'N/A'}`,
+                        status: res.status === 'open' ? 'operational' : 'closed',
+                        updated_at: res.updated_at
+                    });
+                }
+            });
+
+            // Process Active Tasks (Proxy for Volunteers)
+            (tasksRes.data || []).forEach((task: any) => {
+                if (task.location && task.location.lat && task.location.lng) {
+                    mapLocations.push({
+                        id: task.id,
+                        type: 'volunteer', // Representing the team/volunteer working on it
+                        lat: task.location.lat,
+                        lng: task.location.lng,
+                        title: task.profiles?.full_name ? `Volunteer: ${task.profiles.full_name}` : 'Volunteer Team',
+                        description: `Working on: ${task.task_type}`,
+                        status: 'active',
+                        updated_at: task.created_at
+                    });
+                }
+            });
+
+            setLocations(mapLocations);
+
+        } catch (err: any) {
+            console.error('Error fetching map data:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchMapData();
+
+        // Subscription for real-time updates
+        const channel = supabase.channel('map_updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'aid_requests' }, () => fetchMapData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, () => fetchMapData())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    return { locations, loading, error, refetch: fetchMapData };
+}

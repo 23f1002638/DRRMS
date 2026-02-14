@@ -13,8 +13,6 @@ import {
     Heart,
     Shield,
     Clock,
-    MapPin,
-    Phone,
     Settings
 } from 'lucide-react';
 import { useLiveRequests, useAnalytics } from '../hooks/useDisasterData';
@@ -22,9 +20,10 @@ import { toast } from 'sonner';
 
 interface AdminDashboardProps {
     user: User;
+    onViewChange?: (view: string) => void;
 }
 
-export function AdminDashboard({ user }: AdminDashboardProps) {
+export function AdminDashboard({ onViewChange }: AdminDashboardProps) {
     // Use real-time data hooks
     const { requests: aidRequests, loading: requestsLoading, error: requestsError } = useLiveRequests();
     const { analytics, loading: analyticsLoading } = useAnalytics();
@@ -241,28 +240,43 @@ export function AdminDashboard({ user }: AdminDashboardProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <Button className="h-16 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700">
+                        <Button
+                            className="h-16 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                            onClick={() => toast.info('Emergency Alert System coming soon')}
+                        >
                             <div className="flex flex-col items-center">
                                 <AlertTriangle className="h-5 w-5 mb-1" />
                                 <span className="text-xs">Emergency Alert</span>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-16">
+                        <Button
+                            variant="outline"
+                            className="h-16"
+                            onClick={() => onViewChange?.('volunteer-management')}
+                        >
                             <div className="flex flex-col items-center">
                                 <Users className="h-5 w-5 mb-1" />
                                 <span className="text-xs">Manage Teams</span>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-16">
+                        <Button
+                            variant="outline"
+                            className="h-16"
+                            onClick={() => onViewChange?.('inventory')}
+                        >
                             <div className="flex flex-col items-center">
                                 <Package className="h-5 w-5 mb-1" />
                                 <span className="text-xs">Inventory Control</span>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-16">
+                        <Button
+                            variant="outline"
+                            className="h-16"
+                            onClick={() => onViewChange?.('resources')}
+                        >
                             <div className="flex flex-col items-center">
                                 <Settings className="h-5 w-5 mb-1" />
-                                <span className="text-xs">System Settings</span>
+                                <span className="text-xs">Resource Mgmt</span>
                             </div>
                         </Button>
                     </div>
