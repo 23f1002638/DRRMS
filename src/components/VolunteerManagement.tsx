@@ -288,7 +288,7 @@ export function VolunteerManagement({ }: VolunteerManagementProps) {
                         <MessageSquare className="h-4 w-4 mr-1" />
                         Email
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => window.location.href = `tel:${selectedVolunteer.phoneNumber || '555-123-4567'}`}>
                         <Phone className="h-4 w-4 mr-1" />
                         Call
                       </Button>
@@ -313,15 +313,15 @@ export function VolunteerManagement({ }: VolunteerManagementProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="outline" className="w-full text-left justify-start" size="sm">
+                <Button variant="outline" className="w-full text-left justify-start" size="sm" onClick={() => toast.info('Bulk assignment feature coming soon')}>
                   <Users className="h-4 w-4 mr-2" />
                   Bulk Assignment
                 </Button>
-                <Button variant="outline" className="w-full text-left justify-start" size="sm">
+                <Button variant="outline" className="w-full text-left justify-start" size="sm" onClick={() => toast.info('Broadcast feature coming soon')}>
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Send Broadcast
                 </Button>
-                <Button variant="outline" className="w-full text-left justify-start" size="sm">
+                <Button variant="outline" className="w-full text-left justify-start" size="sm" onClick={() => toast.info('Shift scheduling coming soon')}>
                   <Clock className="h-4 w-4 mr-2" />
                   Schedule Shifts
                 </Button>

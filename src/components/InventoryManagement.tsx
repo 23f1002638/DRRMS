@@ -237,7 +237,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast.info('Delivery request feature coming soon')}>
             <Truck className="h-4 w-4 mr-2" />
             Request Delivery
           </Button>
@@ -561,11 +561,11 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => toast.info('Transfer feature coming soon')}>
                       <Truck className="h-4 w-4 mr-1" />
                       Transfer
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => toast.info('Edit details feature coming soon')}>
                       Edit Details
                     </Button>
                   </div>
@@ -606,7 +606,7 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
                   <TrendingDown className="h-4 w-4 mr-2" />
                   View Low Stock
                 </Button>
-                <Button variant="outline" className="w-full text-left justify-start" size="sm">
+                <Button variant="outline" className="w-full text-left justify-start" size="sm" onClick={() => toast.success('Report generated and downloaded (simulated)')}>
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Generate Report
                 </Button>
