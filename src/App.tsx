@@ -179,9 +179,9 @@ function App() {
         case 'volunteer':
           return <VolunteerDashboard user={user} />;
         case 'victim':
-          return <VictimDashboard user={user} />;
+          return <VictimDashboard user={user} onViewChange={(view) => setActiveView(view as ActiveView)} />;
         default:
-          return <VictimDashboard user={user} />;
+          return <VictimDashboard user={user} onViewChange={(view) => setActiveView(view as ActiveView)} />;
       }
     } catch (error) {
       console.error('Error rendering dashboard:', error);

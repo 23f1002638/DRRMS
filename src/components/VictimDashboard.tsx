@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  AlertTriangle,
+  CheckCircle,
   Clock,
   Package,
   MapPin,
@@ -14,23 +13,28 @@ import {
   MessageSquare,
   Heart
 } from 'lucide-react';
-import { ApiClient } from '../utils/supabase/client';
+import { supabase } from '../lib/supabase';
 
 interface VictimDashboardProps {
   user: User;
+  onViewChange: (view: string) => void;
 }
 
-export function VictimDashboard({ user }: VictimDashboardProps) {
+export function VictimDashboard({ user, onViewChange }: VictimDashboardProps) {
   const [aidRequests, setAidRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchAidRequests = async () => {
       try {
-        const response = await ApiClient.getAidRequests(user.accessToken);
-        // Filter requests for current user (in a real app, this would be done on the backend)
-        const userRequests = (response.aid_requests || []).filter((req: any) => req.user_id === user.id);
-        setAidRequests(userRequests);
+        const { data, error } = await supabase
+          .from('aid_requests')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setAidRequests(data || []);
       } catch (error) {
         console.error('Error fetching aid requests:', error);
       } finally {
@@ -39,7 +43,7 @@ export function VictimDashboard({ user }: VictimDashboardProps) {
     };
 
     fetchAidRequests();
-  }, [user.accessToken, user.id]);
+  }, [user.id]);
 
   if (isLoading) {
     return (
@@ -72,15 +76,16 @@ export function VictimDashboard({ user }: VictimDashboardProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Button className="h-16 bg-red-600 hover:bg-red-700">
+            <Button className="h-16 bg-red-600 hover:bg-red-700" onClick={() => window.open('tel:911')}>
               <div className="flex flex-col items-center">
                 <Phone className="h-5 w-5 mb-1" />
                 <span>Emergency Call 911</span>
               </div>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="h-16 border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-950/50"
+              onClick={() => onViewChange('request')}
             >
               <div className="flex flex-col items-center">
                 <AlertTriangle className="h-5 w-5 mb-1" />
@@ -124,20 +129,24 @@ export function VictimDashboard({ user }: VictimDashboardProps) {
                 </div>
               </div>
             ))}
-            
+
             {aidRequests.length === 0 && (
               <div className="text-center py-6">
                 <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-muted-foreground">No aid requests yet</p>
               </div>
             )}
+
+            <Button variant="link" className="w-full text-blue-600" onClick={() => onViewChange('status')}>
+              View All Requests
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Access */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onViewChange('request')}>
           <CardContent className="p-4">
             <div className="flex flex-col items-center text-center space-y-2">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -152,7 +161,7 @@ export function VictimDashboard({ user }: VictimDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onViewChange('resources')}>
           <CardContent className="p-4">
             <div className="flex flex-col items-center text-center space-y-2">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
