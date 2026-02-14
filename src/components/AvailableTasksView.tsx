@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { useClaimTask } from '../hooks/useDisasterData';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -60,25 +60,9 @@ export function AvailableTasksView({ user: _user }: AvailableTasksViewProps) {
     useEffect(() => {
         fetchTasks();
 
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('volunteer_tasks_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'volunteer_tasks'
-                },
-                () => {
-                    fetchTasks();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        // Polling for updates
+        const interval = setInterval(fetchTasks, 15000);
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -88,15 +72,29 @@ export function AvailableTasksView({ user: _user }: AvailableTasksViewProps) {
     async function fetchTasks() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('volunteer_tasks')
-                .select('*')
-                .eq('status', 'available')
-                .order('priority', { ascending: false })
-                .order('created_at', { ascending: true });
+            const requests = await api.requests.getAll();
 
-            if (error) throw error;
-            setTasks(data || []);
+            // Map aid requests to VolunteerTask format for display
+            const availableTasks = requests
+                .filter(r => r.status === 'pending') // Only pending requests are "available" tasks
+                .map(r => ({
+                    id: r.id, // This is the request ID, which is what we claim
+                    aid_request_id: r.id,
+                    task_type: r.category,
+                    description: r.description || null,
+                    status: 'available',
+                    priority: r.urgency >= 5 ? 'critical' : r.urgency >= 4 ? 'high' : r.urgency >= 3 ? 'medium' : 'low',
+                    location: {
+                        lat: r.location_lat,
+                        lng: r.location_lng,
+                        address: r.location_address
+                    },
+                    created_at: r.created_at,
+                    claimed_at: null,
+                    completed_at: null
+                }));
+
+            setTasks(availableTasks);
         } catch (error) {
             console.error('Error fetching tasks:', error);
             toast.error('Failed to load available tasks');

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -72,36 +72,15 @@ export function ResourceManagementView({ user }: ResourceManagementProps) {
     useEffect(() => {
         fetchResources();
 
-        // Real-time subscription
-        const subscription = supabase
-            .channel('resources_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'resources'
-                },
-                () => {
-                    fetchResources();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        // Polling for updates
+        const interval = setInterval(fetchResources, 15000);
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchResources() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('resources')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await api.resources.getAll();
             setResources(data || []);
         } catch (error) {
             console.error('Error fetching resources:', error);
@@ -129,20 +108,11 @@ export function ResourceManagementView({ user }: ResourceManagementProps) {
 
             if (editingResource) {
                 // Update existing resource
-                const { error } = await supabase
-                    .from('resources')
-                    .update(resourceData)
-                    .eq('id', editingResource.id);
-
-                if (error) throw error;
+                await api.resources.update(editingResource.id, resourceData);
                 toast.success('Resource updated successfully! ✅');
             } else {
                 // Create new resource
-                const { error } = await supabase
-                    .from('resources')
-                    .insert(resourceData);
-
-                if (error) throw error;
+                await api.resources.create(resourceData);
                 toast.success('Resource created successfully! 🎉');
             }
 
@@ -160,12 +130,7 @@ export function ResourceManagementView({ user }: ResourceManagementProps) {
         if (!confirm('Are you sure you want to delete this resource?')) return;
 
         try {
-            const { error } = await supabase
-                .from('resources')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            await api.resources.delete(id);
             toast.success('Resource deleted successfully');
             fetchResources();
         } catch (error) {

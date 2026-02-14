@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase, ReliefRequest, InventoryItem, Assignment, Profile } from '../lib/supabase';
+import { api } from '../lib/api';
+import { ReliefRequest, InventoryItem, Assignment, Profile } from '../types';
 import { toast } from 'sonner';
 
 // =====================================================
@@ -15,46 +16,24 @@ export function useLiveRequests() {
         // Initial fetch
         fetchRequests();
 
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('relief_requests_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'relief_requests',
-                },
-                (payload) => {
-                    console.log('Relief request change:', payload);
-                    // Refetch data on any change
-                    fetchRequests();
-                }
-            )
-            .subscribe();
+        // Polling for real-time updates (Local Backend)
+        const interval = setInterval(fetchRequests, 5000);
 
-        return () => {
-            subscription.unsubscribe();
-        };
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchRequests() {
         try {
-            setLoading(true);
+            // Don't set loading on poll updates to avoid flickering
+            if (requests.length === 0) setLoading(true);
             setError(null);
 
-            const { data, error: fetchError } = await supabase
-                .from('relief_requests')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (fetchError) throw fetchError;
-
+            const data = await api.requests.getAll();
             setRequests(data || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch requests';
+            console.error(errorMessage);
             setError(errorMessage);
-            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -74,45 +53,21 @@ export function useInventory() {
 
     useEffect(() => {
         fetchInventory();
-
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('inventory_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'inventory',
-                },
-                () => {
-                    fetchInventory();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        const interval = setInterval(fetchInventory, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchInventory() {
         try {
-            setLoading(true);
+            if (inventory.length === 0) setLoading(true);
             setError(null);
 
-            const { data, error: fetchError } = await supabase
-                .from('inventory')
-                .select('*')
-                .order('item_name', { ascending: true });
-
-            if (fetchError) throw fetchError;
-
+            const data = await api.inventory.getAll();
             setInventory(data || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory';
+            console.error(errorMessage);
             setError(errorMessage);
-            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -147,45 +102,15 @@ export function useSubmitRequest() {
             setSubmitting(true);
             setError(null);
 
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 throw new Error('You must be logged in to submit a request');
             }
 
-            // Map urgency to priority
-            const priorityMap: Record<number, string> = {
-                1: 'low',
-                2: 'low',
-                3: 'medium',
-                4: 'high',
-                5: 'critical',
-            };
-
-            // Insert request into aid_requests table
-            const { data: newRequest, error: insertError } = await supabase
-                .from('aid_requests')
-                .insert({
-                    user_id: user.id,
-                    aid_type: data.category,
-                    priority: priorityMap[data.urgency] || 'medium',
-                    people_count: data.people_count || 1,
-                    description: data.description || data.title,
-                    location: {
-                        lat: data.lat,
-                        lng: data.lng,
-                        address: data.location_address || `${data.lat}, ${data.lng}`
-                    },
-                    status: 'pending'
-                })
-                .select()
-                .maybeSingle();
-
-            if (insertError) throw insertError;
+            const result = await api.requests.create(data);
 
             toast.success('Request submitted successfully!');
-            return { success: true, data: newRequest };
+            return { success: true, data: result };
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to submit request';
             setError(errorMessage);
@@ -210,57 +135,28 @@ export function useAssignments() {
 
     useEffect(() => {
         fetchAssignments();
-
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('assignments_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'assignments',
-                },
-                () => {
-                    fetchAssignments();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        const interval = setInterval(fetchAssignments, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchAssignments() {
         try {
-            setLoading(true);
+            if (assignments.length === 0) setLoading(true);
             setError(null);
 
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 setAssignments([]);
                 setLoading(false);
                 return;
             }
 
-            const { data, error: fetchError } = await supabase
-                .from('assignments')
-                .select(`
-          *,
-          relief_requests (*)
-        `)
-                .eq('volunteer_id', user.id)
-                .order('accepted_at', { ascending: false });
-
-            if (fetchError) throw fetchError;
-
+            const data = await api.assignments.getMy();
             setAssignments(data || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch assignments';
+            console.error(errorMessage);
             setError(errorMessage);
-            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -282,32 +178,17 @@ export function useClaimTask() {
             setClaiming(true);
             setError(null);
 
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 throw new Error('You must be logged in to claim a task');
             }
 
-            // Call the database function
-            const { data, error: claimError } = await supabase
-                .rpc('claim_task', { task_id: requestId });
+            await api.assignments.claim(requestId);
 
-            if (claimError) throw claimError;
-
-            // Check the result
-            if (data && typeof data === 'object' && 'success' in data) {
-                if (data.success) {
-                    toast.success('Mission Accepted. Rerouting map...', {
-                        duration: 3000,
-                        icon: '🎯',
-                    });
-                    return { success: true };
-                } else {
-                    throw new Error(data.error || 'Failed to claim task');
-                }
-            }
-
+            toast.success('Mission Accepted. Rerouting map...', {
+                duration: 3000,
+                icon: '🎯',
+            });
             return { success: true };
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to claim task';
@@ -340,25 +221,18 @@ export function useProfile() {
             setLoading(true);
             setError(null);
 
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 setProfile(null);
                 setLoading(false);
                 return;
             }
 
-            const { data, error: fetchError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (fetchError) throw fetchError;
-
+            const data = await api.profiles.get(session.user.id);
             setProfile(data);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch profile';
+            console.error(errorMessage);
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -379,6 +253,8 @@ export function useAnalytics() {
 
     useEffect(() => {
         fetchAnalytics();
+        const interval = setInterval(fetchAnalytics, 10000);
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchAnalytics() {
@@ -386,20 +262,11 @@ export function useAnalytics() {
             setLoading(true);
             setError(null);
 
-            // Fetch all data in parallel
-            const [requestsRes, inventoryRes, assignmentsRes] = await Promise.all([
-                supabase.from('relief_requests').select('*'),
-                supabase.from('inventory').select('*'),
-                supabase.from('assignments').select('*'),
+            const [requests, inventory, _] = await Promise.all([
+                api.requests.getAll(),
+                api.inventory.getAll(),
+                api.volunteers.getAll()
             ]);
-
-            if (requestsRes.error) throw requestsRes.error;
-            if (inventoryRes.error) throw inventoryRes.error;
-            if (assignmentsRes.error) throw assignmentsRes.error;
-
-            const requests = requestsRes.data || [];
-            const inventory = inventoryRes.data || [];
-            const assignments = assignmentsRes.data || [];
 
             // Calculate analytics
             const analyticsData = {
@@ -410,8 +277,8 @@ export function useAnalytics() {
                 totalInventoryItems: inventory.length,
                 lowStockItems: inventory.filter((i) => i.status === 'low_stock').length,
                 outOfStockItems: inventory.filter((i) => i.status === 'out_of_stock').length,
-                totalAssignments: assignments.length,
-                activeAssignments: assignments.filter((a) => !a.completed_at).length,
+                totalAssignments: 0, // Need assignments endpoint for global stats
+                activeAssignments: 0,
                 requestsByCategory: {
                     food: requests.filter((r) => r.category === 'food').length,
                     medical: requests.filter((r) => r.category === 'medical').length,
@@ -464,62 +331,52 @@ export function useMapData() {
             setLoading(true);
             setError(null);
 
-            const [requestsRes, resourcesRes, tasksRes] = await Promise.all([
-                supabase.from('aid_requests').select('*').neq('status', 'cancelled'),
-                supabase.from('resources').select('*'),
-                supabase.from('volunteer_tasks').select('*, profiles(full_name)').neq('status', 'completed')
+            const [requests, resources] = await Promise.all([
+                api.requests.getAll(),
+                api.resources.getAll()
             ]);
-
-            if (requestsRes.error) throw requestsRes.error;
-            if (resourcesRes.error) throw resourcesRes.error;
-            // Tasks error might be acceptable if RLS blocks it, but we are admin usually
 
             const mapLocations: MapLocation[] = [];
 
             // Process Requests
-            (requestsRes.data || []).forEach((req: any) => {
-                if (req.location && req.location.lat && req.location.lng) {
+            requests.forEach((req: any) => {
+                if (req.location_lat && req.location_lng) {
+                    mapLocations.push({
+                        id: req.id,
+                        type: 'request',
+                        lat: req.location_lat,
+                        lng: req.location_lng,
+                        title: req.category.charAt(0).toUpperCase() + req.category.slice(1) + ' Request',
+                        description: req.description || 'No description',
+                        status: req.status === 'pending' ? 'urgent' : 'active',
+                        updated_at: req.created_at
+                    });
+                } else if (req.location && req.location.lat) { // Legacy support
                     mapLocations.push({
                         id: req.id,
                         type: 'request',
                         lat: req.location.lat,
                         lng: req.location.lng,
-                        title: req.aid_type.charAt(0).toUpperCase() + req.aid_type.slice(1) + ' Request',
+                        title: req.aid_type ? req.aid_type.toUpperCase() : 'Request',
                         description: req.description || 'No description',
-                        status: req.status === 'pending' ? 'urgent' : 'active',
-                        updated_at: req.updated_at
+                        status: req.status,
+                        updated_at: req.created_at
                     });
                 }
             });
 
             // Process Resources
-            (resourcesRes.data || []).forEach((res: any) => {
-                if (res.location && res.location.lat && res.location.lng) {
+            resources.forEach((res: any) => {
+                if (res.location_lat && res.location_lng) {
                     mapLocations.push({
                         id: res.id,
                         type: 'resource',
-                        lat: res.location.lat,
-                        lng: res.location.lng,
+                        lat: res.location_lat,
+                        lng: res.location_lng,
                         title: res.name,
                         description: `${res.type} - Capacity: ${res.capacity || 'N/A'}`,
                         status: res.status === 'open' ? 'operational' : 'closed',
-                        updated_at: res.updated_at
-                    });
-                }
-            });
-
-            // Process Active Tasks (Proxy for Volunteers)
-            (tasksRes.data || []).forEach((task: any) => {
-                if (task.location && task.location.lat && task.location.lng) {
-                    mapLocations.push({
-                        id: task.id,
-                        type: 'volunteer', // Representing the team/volunteer working on it
-                        lat: task.location.lat,
-                        lng: task.location.lng,
-                        title: task.profiles?.full_name ? `Volunteer: ${task.profiles.full_name}` : 'Volunteer Team',
-                        description: `Working on: ${task.task_type}`,
-                        status: 'active',
-                        updated_at: task.created_at
+                        updated_at: res.created_at
                     });
                 }
             });
@@ -536,16 +393,8 @@ export function useMapData() {
 
     useEffect(() => {
         fetchMapData();
-
-        // Subscription for real-time updates
-        const channel = supabase.channel('map_updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'aid_requests' }, () => fetchMapData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, () => fetchMapData())
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        const interval = setInterval(fetchMapData, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     return { locations, loading, error, refetch: fetchMapData };

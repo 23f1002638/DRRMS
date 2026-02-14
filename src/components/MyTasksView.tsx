@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -63,39 +63,18 @@ export function MyTasksView({ user }: MyTasksViewProps) {
     useEffect(() => {
         fetchMyTasks();
 
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('my_tasks_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'volunteer_tasks',
-                    filter: `volunteer_id=eq.${user.id}`
-                },
-                () => {
-                    fetchMyTasks();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        // Polling for updates
+        const interval = setInterval(fetchMyTasks, 15000);
+        return () => clearInterval(interval);
     }, [user.id]);
 
     async function fetchMyTasks() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('volunteer_tasks')
-                .select('*')
-                .eq('volunteer_id', user.id)
-                .in('status', ['claimed', 'in_progress', 'completed'])
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            // api.assignments.getMy returns tasks joined with request details
+            const data = await api.assignments.getMy();
+            // We might need to map or filter if the API returns mixed statuses
+            // The endpoint returns all assignments for the user
             setTasks(data || []);
         } catch (error) {
             console.error('Error fetching my tasks:', error);
@@ -109,15 +88,7 @@ export function MyTasksView({ user }: MyTasksViewProps) {
         try {
             setUpdating(taskId);
 
-            const { error } = await supabase
-                .from('volunteer_tasks')
-                .update({
-                    status: 'in_progress'
-                })
-                .eq('id', taskId)
-                .eq('volunteer_id', user.id);
-
-            if (error) throw error;
+            await api.tasks.update(taskId, { status: 'in_progress' });
 
             toast.success('Task started! 🚀', {
                 description: 'Good luck with your mission!'
@@ -136,28 +107,10 @@ export function MyTasksView({ user }: MyTasksViewProps) {
         try {
             setUpdating(taskId);
 
-            const { error } = await supabase
-                .from('volunteer_tasks')
-                .update({
-                    status: 'completed',
-                    completed_at: new Date().toISOString()
-                })
-                .eq('id', taskId)
-                .eq('volunteer_id', user.id);
-
-            if (error) throw error;
-
-            // Also update the related aid request status
-            const task = tasks.find(t => t.id === taskId);
-            if (task?.aid_request_id) {
-                await supabase
-                    .from('aid_requests')
-                    .update({
-                        status: 'completed',
-                        completed_at: new Date().toISOString()
-                    })
-                    .eq('id', task.aid_request_id);
-            }
+            await api.tasks.update(taskId, {
+                status: 'completed',
+                completed_at: new Date().toISOString()
+            });
 
             toast.success('Task completed! 🎉', {
                 description: 'Thank you for helping those in need!'
@@ -178,18 +131,7 @@ export function MyTasksView({ user }: MyTasksViewProps) {
         try {
             setUpdating(taskId);
 
-            const { error } = await supabase
-                .from('volunteer_tasks')
-                .update({
-                    volunteer_id: null,
-                    status: 'available',
-                    claimed_at: null
-                })
-                .eq('id', taskId)
-                .eq('volunteer_id', user.id)
-                .eq('status', 'claimed'); // Only unclaim if not started
-
-            if (error) throw error;
+            await api.tasks.unclaim(taskId);
 
             toast.success('Task released', {
                 description: 'The task is now available for other volunteers'

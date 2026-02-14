@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from './AuthSystem';
+import { api } from '../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -13,7 +14,6 @@ import {
   MessageSquare,
   Heart
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface VictimDashboardProps {
   user: User;
@@ -27,13 +27,7 @@ export function VictimDashboard({ user, onViewChange }: VictimDashboardProps) {
   useEffect(() => {
     const fetchAidRequests = async () => {
       try {
-        const { data, error } = await supabase
-          .from('aid_requests')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
+        const data = await api.requests.getAll(user.id);
         setAidRequests(data || []);
       } catch (error) {
         console.error('Error fetching aid requests:', error);

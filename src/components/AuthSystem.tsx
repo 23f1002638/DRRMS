@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { UserRole } from '../lib/supabase';
+import { api } from '../lib/api';
+import { UserRole } from '../types';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -58,41 +58,18 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
     setError(null);
 
     try {
-      // Sign in with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: signInEmail,
-        password: signInPassword,
-      });
+      const user = await api.auth.login(signInEmail, signInPassword);
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('No user data returned');
-      }
-
-      // Fetch user profile to get role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-
-      if (!profile) {
-        throw new Error('Profile not found. Please contact support.');
-      }
-
-      // Create user object
-      const user: User = {
-        id: profile.id,
-        name: profile.full_name,
-        email: profile.email,
-        role: profile.role as UserRole,
+      // Convert API user to Component User type (they match but to be safe)
+      const userObj: User = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as UserRole,
       };
 
-      toast.success(`Welcome back, ${user.name}! 👋`);
-      onLogin(user);
+      toast.success(`Welcome back, ${userObj.name}! 👋`);
+      onLogin(userObj);
     } catch (err: any) {
       console.error('Sign in error:', err);
       const errorMessage = err.message || 'Invalid email or password';
@@ -129,106 +106,25 @@ export function AuthSystem({ onLogin }: AuthSystemProps) {
     setIsLoading(true);
 
     try {
-      // Sign up with Supabase
-      // Pass role and full_name in metadata so the trigger can use it
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const user = await api.auth.signup({
         email: signUpEmail,
         password: signUpPassword,
-        options: {
-          data: {
-            full_name: signUpName,
-            role: signUpRole,
-          },
-        },
+        name: signUpName,
+        role: signUpRole
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error('No user data returned');
-      }
-
-      // The handle_new_user() trigger will automatically create the profile
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Fetch the created profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      // If there's an error OR profile is null, retry
-      if (profileError || !profile) {
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-        } else {
-          console.log('Profile not found on first attempt, retrying...');
-        }
-
-        // Profile might not be created yet, try one more time
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data: retryProfile, error: retryError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .maybeSingle();
-
-        if (retryError) {
-          console.error('Retry profile fetch error:', retryError);
-          throw new Error('Failed to fetch profile after signup. Please try signing in.');
-        }
-
-        if (!retryProfile) {
-          console.error('Profile still not found after retry');
-          throw new Error('Profile creation failed. Please contact support or try signing in.');
-        }
-
-        // Use retry profile
-        const user: User = {
-          id: retryProfile.id,
-          name: retryProfile.full_name,
-          email: retryProfile.email,
-          role: retryProfile.role as UserRole,
-        };
-
-        toast.success(`Account created successfully! Welcome, ${user.name}! 🎉`);
-        onLogin(user);
-        return;
-      }
-
-      // Profile found on first attempt - create user object
-      const user: User = {
-        id: profile.id,
-        name: profile.full_name,
-        email: profile.email,
-        role: profile.role as UserRole,
+      const userObj: User = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as UserRole,
       };
 
-      toast.success(`Account created successfully! Welcome, ${user.name}! 🎉`);
-      onLogin(user);
+      toast.success(`Account created successfully! Welcome, ${userObj.name}! 🎉`);
+      onLogin(userObj);
     } catch (err: any) {
       console.error('Sign up error:', err);
-      console.error('Error details:', {
-        message: err.message,
-        code: err.code,
-        details: err.details,
-        hint: err.hint,
-      });
-
-      let errorMessage = 'An unexpected error occurred during signup';
-
-      if (err.message?.includes('Profile creation failed')) {
-        errorMessage = 'Failed to create your profile. Please try again or contact support.';
-      } else if (err.message?.includes('Failed to fetch profile')) {
-        errorMessage = 'Account created but profile fetch failed. Please try signing in.';
-      } else if (err.message?.includes('already registered') || err.code === '23505') {
-        errorMessage = 'This email is already registered. Please sign in instead.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
+      const errorMessage = err.message || 'An unexpected error occurred during signup';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -85,12 +85,7 @@ export function ResourcesView(_props: ResourcesViewProps) {
     async function fetchResources() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('resources')
-                .select('*')
-                .order('name', { ascending: true });
-
-            if (error) throw error;
+            const data = await api.resources.getAll();
             setResources(data || []);
         } catch (error) {
             console.error('Error fetching resources:', error);

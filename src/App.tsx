@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
+import { api } from './lib/api';
 import { AuthSystem, User } from './components/AuthSystem';
 import { Header } from './components/Header';
 import { AdminDashboard } from './components/AdminDashboard.refactored';
@@ -42,71 +42,22 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthSystem, setShowAuthSystem] = useState(false);
 
-  // Listen to auth state changes and fetch user profile
+  // Check current session on mount
   useEffect(() => {
-    // Check current session on mount
     checkSession();
-
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchUserProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setShowAuthSystem(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed');
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
   }, []);
 
   const checkSession = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (error) throw error;
-
+      const session = await api.auth.getSession();
       if (session?.user) {
-        await fetchUserProfile(session.user.id);
+        setUser(session.user);
+        console.log('User session loaded:', session.user.role);
       } else {
-        setIsLoading(false);
+        setShowAuthSystem(false);
       }
     } catch (error) {
       console.error('Session check error:', error);
-      setIsLoading(false);
-    }
-  };
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (profile) {
-        const userData: User = {
-          id: profile.id,
-          name: profile.full_name,
-          email: profile.email,
-          role: profile.role,
-        };
-        setUser(userData);
-        console.log('User profile loaded:', userData.role);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast.error('Failed to load user profile');
     } finally {
       setIsLoading(false);
     }
@@ -115,14 +66,13 @@ function App() {
   const handleLogin = (userData: User) => {
     setUser(userData);
     setActiveView('dashboard');
+    setShowAuthSystem(false);
     console.log('User logged in:', userData.role);
   };
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
+      api.auth.logout();
       setUser(null);
       setActiveView('dashboard');
       setShowAuthSystem(false);

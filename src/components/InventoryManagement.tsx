@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User } from './AuthSystem';
 import { useInventory } from '../hooks/useDisasterData';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -104,16 +104,11 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
         newStatus = 'available';
       }
 
-      const { error: updateError } = await supabase
-        .from('inventory')
-        .update({
-          quantity: newQuantity,
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedItem.id);
-
-      if (updateError) throw updateError;
+      await api.inventory.update(selectedItem.id, {
+        quantity: newQuantity,
+        status: newStatus,
+        location: selectedItem.location // Update location if needed, or keep same
+      });
 
       toast.success(`Successfully restocked ${selectedItem.item_name}! 📦`, {
         description: `Added ${amount} ${selectedItem.unit}. New total: ${newQuantity}`,
@@ -142,28 +137,15 @@ export function InventoryManagement({ user }: InventoryManagementProps) {
       if (newItemData.quantity === 0) status = 'out_of_stock';
       else if (newItemData.quantity < newItemData.min_threshold) status = 'low_stock';
 
-      const { error: insertError } = await supabase
-        .from('inventory')
-        .insert({
-          item_name: newItemData.item_name,
-          category: newItemData.category,
-          quantity: newItemData.quantity,
-          unit: newItemData.unit,
-          min_threshold: newItemData.min_threshold,
-          location: newItemData.location,
-          status: status,
-          last_updated_by: user.id
-        });
-
-      // Note: If 'supplier' or 'threshold_limit' (vs min_threshold) mismatch schema, it will error.
-      // Converting based on verified schema usage from view_file earlier implies 'min_threshold' in DB but code used 'threshold_limit' in types.
-      // Let's assume the hook maps it or we need to be careful.
-      // Looking at useInventory hook, it selects *. 
-      // Looking at schema: min_threshold INTEGER DEFAULT 10.
-      // Looking at InventoryItem type: it might expect threshold_limit.
-      // Let's use specific insert keys from schema.
-
-      if (insertError) throw insertError;
+      await api.inventory.create({
+        item_name: newItemData.item_name,
+        category: newItemData.category,
+        quantity: newItemData.quantity,
+        unit: newItemData.unit,
+        min_threshold: newItemData.min_threshold,
+        location: newItemData.location,
+        status: status
+      });
 
       toast.success('Item added successfully');
       setIsAddingItem(false);

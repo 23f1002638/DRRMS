@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { User } from './AuthSystem';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -47,22 +47,16 @@ export function ProfileView({ user }: ProfileViewProps) {
     async function fetchProfile() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (error) throw error;
+            const data = await api.profiles.get(user.id);
 
             if (data) {
                 setProfile(data);
-                setFullName(data.full_name || '');
-                setPhoneNumber(data.phone_number || '');
+                setFullName(data.full_name || data.name || '');
+                setPhoneNumber(data.phone_number || data.phone || '');
                 setBio(data.bio || '');
                 setLocation(data.location || '');
                 setAvatarUrl(data.avatar_url || '');
-                setSkillsInput(data.skills ? data.skills.join(', ') : '');
+                setSkillsInput(data.skills ? (Array.isArray(data.skills) ? data.skills.join(', ') : data.skills) : '');
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -78,8 +72,8 @@ export function ProfileView({ user }: ProfileViewProps) {
 
         try {
             const updates: any = {
-                full_name: fullName,
-                phone_number: phoneNumber,
+                name: fullName,
+                phone: phoneNumber,
                 bio: bio,
                 location: location,
                 avatar_url: avatarUrl,
@@ -90,12 +84,7 @@ export function ProfileView({ user }: ProfileViewProps) {
                 updates.skills = skillsInput.split(',').map(s => s.trim()).filter(Boolean);
             }
 
-            const { error } = await supabase
-                .from('profiles')
-                .update(updates)
-                .eq('id', user.id);
-
-            if (error) throw error;
+            await api.profiles.update(user.id, updates);
 
             toast.success('Profile updated successfully');
             fetchProfile(); // Refresh data

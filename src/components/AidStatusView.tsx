@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { User } from './AuthSystem';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -17,19 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface AidRequest {
-    id: string;
-    aid_type: string;
-    priority: string;
-    status: string;
-    people_count: number;
-    description: string;
-    location: any;
-    assigned_volunteer_id: string | null;
-    created_at: string;
-    updated_at: string;
-    completed_at: string | null;
-}
+
 
 interface AidStatusViewProps {
     user: User;
@@ -82,46 +71,25 @@ const aidTypeConfig = {
     emergency: { label: 'Emergency', icon: '🚨' }
 };
 
+import { ReliefRequest } from '../types';
+
 export function AidStatusView({ user }: AidStatusViewProps) {
-    const [requests, setRequests] = useState<AidRequest[]>([]);
+    const [requests, setRequests] = useState<ReliefRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState<string | null>(null);
 
     useEffect(() => {
         fetchRequests();
 
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('user_aid_requests')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'aid_requests',
-                    filter: `user_id=eq.${user.id}`
-                },
-                () => {
-                    fetchRequests();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
+        // Polling for updates
+        const interval = setInterval(fetchRequests, 15000);
+        return () => clearInterval(interval);
     }, [user.id]);
 
     async function fetchRequests() {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('aid_requests')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const data = await api.requests.getAll(user.id);
             setRequests(data || []);
         } catch (error) {
             console.error('Error fetching requests:', error);
@@ -134,14 +102,7 @@ export function AidStatusView({ user }: AidStatusViewProps) {
     async function cancelRequest(requestId: string) {
         try {
             setCancelling(requestId);
-            const { error } = await supabase
-                .from('aid_requests')
-                .update({ status: 'cancelled' })
-                .eq('id', requestId)
-                .eq('user_id', user.id)
-                .in('status', ['pending', 'assigned']);
-
-            if (error) throw error;
+            await api.requests.update(requestId, { status: 'cancelled' });
 
             toast.success('Request cancelled successfully');
             fetchRequests();
@@ -186,9 +147,21 @@ export function AidStatusView({ user }: AidStatusViewProps) {
             ) : (
                 <div className="grid gap-4">
                     {requests.map((request) => {
-                        const statusInfo = statusConfig[request.status as keyof typeof statusConfig];
-                        const priorityInfo = priorityConfig[request.priority as keyof typeof priorityConfig];
-                        const aidTypeInfo = aidTypeConfig[request.aid_type as keyof typeof aidTypeConfig];
+                        const statusInfo = statusConfig[request.status as keyof typeof statusConfig] || statusConfig.pending;
+
+                        // Map urgency (number 1-5) to priority string
+                        let priorityKey: keyof typeof priorityConfig = 'medium';
+                        if (request.urgency <= 2) priorityKey = 'low';
+                        else if (request.urgency === 3) priorityKey = 'medium';
+                        else if (request.urgency === 4) priorityKey = 'high';
+                        else if (request.urgency >= 5) priorityKey = 'critical';
+
+                        const priorityInfo = priorityConfig[priorityKey];
+
+                        // Map category to aidType
+                        const aidTypeKey = request.category as keyof typeof aidTypeConfig;
+                        const aidTypeInfo = aidTypeConfig[aidTypeKey] || aidTypeConfig.emergency;
+
                         const StatusIcon = statusInfo.icon;
 
                         return (
@@ -216,7 +189,7 @@ export function AidStatusView({ user }: AidStatusViewProps) {
                                         <div className="flex items-center gap-2">
                                             <UserIcon className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-muted-foreground">People:</span>
-                                            <span className="font-medium">{request.people_count}</span>
+                                            <span className="font-medium">{request.people_count || 1}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -225,11 +198,11 @@ export function AidStatusView({ user }: AidStatusViewProps) {
                                                 {new Date(request.created_at).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        {request.location?.address && (
+                                        {request.location_address && (
                                             <div className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4 text-muted-foreground" />
                                                 <span className="text-muted-foreground truncate">
-                                                    {request.location.address}
+                                                    {request.location_address}
                                                 </span>
                                             </div>
                                         )}

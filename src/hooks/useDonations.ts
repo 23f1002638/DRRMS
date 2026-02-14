@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
+import { api } from '../lib/api';
 import { toast } from 'sonner';
 
 // =====================================================
@@ -22,34 +22,18 @@ export function useSubmitDonation() {
             setSubmitting(true);
             setError(null);
 
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 throw new Error('You must be logged in to make a donation');
             }
 
-            // Insert donation
-            const { data: newDonation, error: insertError } = await supabase
-                .from('donations')
-                .insert({
-                    donor_id: user.id,
-                    donation_type: data.donation_type,
-                    category: data.category,
-                    amount: data.amount,
-                    description: data.description,
-                    status: 'pending'
-                })
-                .select()
-                .maybeSingle();
-
-            if (insertError) throw insertError;
+            await api.donations.create(data);
 
             toast.success('Donation submitted successfully! 💝', {
                 description: 'Thank you for your generous contribution.'
             });
 
-            return { success: true, data: newDonation };
+            return { success: true };
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to submit donation';
             setError(errorMessage);
@@ -73,22 +57,16 @@ export function useDonations() {
             setLoading(true);
             setError(null);
 
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 setDonations([]);
                 setLoading(false);
                 return;
             }
 
-            const { data, error: fetchError } = await supabase
-                .from('donations')
-                .select('*')
-                .eq('donor_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (fetchError) throw fetchError;
-
+            // API endpoint usually returns all for user if auth is used, or all for admin
+            // Current /api/donations implementation returns only user's donations
+            const data = await api.donations.getAll();
             setDonations(data || []);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch donations';
@@ -98,6 +76,10 @@ export function useDonations() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        fetchDonations();
+    }, []);
 
     return { donations, loading, error, fetchDonations, refetch: fetchDonations };
 }
@@ -112,30 +94,25 @@ export function useDonationStats() {
             setLoading(true);
             setError(null);
 
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 setStats(null);
                 setLoading(false);
                 return;
             }
 
-            // Fetch all donations for this donor
-            const { data: donations, error: fetchError } = await supabase
-                .from('donations')
-                .select('*')
-                .eq('donor_id', user.id);
-
-            if (fetchError) throw fetchError;
+            // We can fetch all donations for user and calculate stats client-side same as before
+            const donations = await api.donations.getAll();
 
             // Calculate stats
             const totalAmount = donations?.reduce((sum, d) => sum + (d.amount || 0), 0) || 0;
             const totalDonations = donations?.length || 0;
-            const processedDonations = donations?.filter(d => d.status === 'processed').length || 0;
+            // 'processed' is not in DonationStatus, using 'confirmed' or 'delivered' as completed states
+            const processedDonations = donations?.filter(d => d.status === 'confirmed' || d.status === 'delivered').length || 0;
             const pendingDonations = donations?.filter(d => d.status === 'pending').length || 0;
 
             // Estimate people helped (rough calculation: $50 helps 1 person)
-            const peopleHelped = Math.floor(totalAmount / 50) + (donations?.filter(d => d.donation_type === 'supplies').length || 0) * 5;
+            const peopleHelped = Math.floor(totalAmount / 50) + (donations?.filter(d => (d as any).donation_type === 'supplies').length || 0) * 5;
 
             const statsData = {
                 totalAmount,
@@ -144,15 +121,15 @@ export function useDonationStats() {
                 pendingDonations,
                 peopleHelped,
                 byCategory: {
-                    food: donations?.filter(d => d.category === 'food').length || 0,
-                    medical: donations?.filter(d => d.category === 'medical').length || 0,
-                    shelter: donations?.filter(d => d.category === 'shelter').length || 0,
-                    general: donations?.filter(d => d.category === 'general').length || 0,
+                    food: donations?.filter(d => (d as any).category === 'food').length || 0,
+                    medical: donations?.filter(d => (d as any).category === 'medical').length || 0,
+                    shelter: donations?.filter(d => (d as any).category === 'shelter').length || 0,
+                    general: donations?.filter(d => (d as any).category === 'general').length || 0,
                 },
                 byType: {
-                    money: donations?.filter(d => d.donation_type === 'money').length || 0,
-                    supplies: donations?.filter(d => d.donation_type === 'supplies').length || 0,
-                    services: donations?.filter(d => d.donation_type === 'services').length || 0,
+                    money: donations?.filter(d => (d as any).donation_type === 'money').length || 0,
+                    supplies: donations?.filter(d => (d as any).donation_type === 'supplies').length || 0,
+                    services: donations?.filter(d => (d as any).donation_type === 'services').length || 0,
                 }
             };
 
@@ -164,6 +141,10 @@ export function useDonationStats() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        fetchStats();
+    }, []);
 
     return { stats, loading, error, fetchStats, refetch: fetchStats };
 }

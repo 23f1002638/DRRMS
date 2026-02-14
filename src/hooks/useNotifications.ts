@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { toast } from 'sonner';
 
 export interface Notification {
@@ -18,59 +18,19 @@ export function useNotifications() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchNotifications();
-
-        // Set up real-time subscription
-        const subscription = supabase
-            .channel('user_notifications')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'notifications'
-                },
-                (payload) => {
-                    // We could optimize this to just handle the payload, but fetching is safer for consistency for now
-                    fetchNotifications();
-                    if (payload.eventType === 'INSERT') {
-                        const newNotif = payload.new as Notification;
-                        toast(newNotif.title, {
-                            description: newNotif.message,
-                            // duration: 5000,
-                        });
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, []);
-
     async function fetchNotifications() {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            const session = await api.auth.getSession();
+            if (!session?.user) {
                 setNotifications([]);
                 setUnreadCount(0);
                 setLoading(false);
                 return;
             }
 
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            if (error) throw error;
-
+            const data = await api.notifications.getAll();
             setNotifications(data || []);
-            setUnreadCount((data || []).filter(n => !n.read).length);
+            setUnreadCount((data || []).filter((n: Notification) => !n.read).length);
         } catch (error) {
             console.error('Error fetching notifications:', error);
         } finally {
@@ -78,14 +38,16 @@ export function useNotifications() {
         }
     }
 
+    useEffect(() => {
+        fetchNotifications();
+        // Polling for notifications instead of real-time
+        const interval = setInterval(fetchNotifications, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
     async function markAsRead(id: string) {
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('id', id);
-
-            if (error) throw error;
+            await api.notifications.markAsRead(id);
 
             // Optimistic update
             setNotifications(prev =>
@@ -99,16 +61,7 @@ export function useNotifications() {
 
     async function markAllAsRead() {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { error } = await supabase
-                .from('notifications')
-                .update({ read: true })
-                .eq('user_id', user.id)
-                .eq('read', false);
-
-            if (error) throw error;
+            await api.notifications.markAllAsRead();
 
             // Optimistic update
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));

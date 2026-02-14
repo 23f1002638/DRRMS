@@ -12,15 +12,12 @@ import {
   DollarSign,
   Package,
   TrendingUp,
-  CheckCircle,
-  Clock,
   Users,
   Gift,
   Loader2,
-  ArrowUpRight
 } from 'lucide-react';
 import { useSubmitDonation, useDonations, useDonationStats } from '../hooks/useDonations';
-import { supabase } from '../lib/supabase';
+
 
 interface DonorDashboardProps {
   user: User;
@@ -43,27 +40,13 @@ export function DonorDashboard({ user }: DonorDashboardProps) {
     fetchDonations();
     fetchStats();
 
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('user_donations')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'donations',
-          filter: `donor_id=eq.${user.id}`
-        },
-        () => {
-          fetchDonations();
-          fetchStats();
-        }
-      )
-      .subscribe();
+    // Polling for updates instead of real-time
+    const interval = setInterval(() => {
+      fetchDonations();
+      fetchStats();
+    }, 15000);
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => clearInterval(interval);
   }, [user.id]);
 
   const handleDonationSubmit = async (e: React.FormEvent) => {
@@ -111,7 +94,7 @@ export function DonorDashboard({ user }: DonorDashboardProps) {
                   <Label htmlFor="donation_type">Donation Type *</Label>
                   <Select
                     value={donationData.donation_type}
-                    onValueChange={(value) => setDonationData(prev => ({ ...prev, donation_type: value }))}
+                    onValueChange={(value: string) => setDonationData(prev => ({ ...prev, donation_type: value }))}
                     required
                   >
                     <SelectTrigger>
@@ -129,7 +112,7 @@ export function DonorDashboard({ user }: DonorDashboardProps) {
                   <Label htmlFor="category">Category *</Label>
                   <Select
                     value={donationData.category}
-                    onValueChange={(value) => setDonationData(prev => ({ ...prev, category: value }))}
+                    onValueChange={(value: string) => setDonationData(prev => ({ ...prev, category: value }))}
                     required
                   >
                     <SelectTrigger>

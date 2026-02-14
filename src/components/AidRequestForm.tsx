@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { User } from './AuthSystem';
+import { useState } from 'react';
 import { useSubmitRequest } from '../hooks/useDisasterData';
 import { Button } from './ui/button';
 import { Alert, AlertDescription } from './ui/alert';
-import { AlertTriangle, Zap, CheckCircle } from 'lucide-react';
+import { AlertTriangle, Zap } from 'lucide-react';
 import { SuccessView } from './aid-request/SuccessView';
 import { AidTypeSelector } from './aid-request/AidTypeSelector';
 import { PrioritySelector } from './aid-request/PrioritySelector';
@@ -13,11 +12,10 @@ import { initialFormData, AidRequestFormData } from './constants/aidRequestConst
 import { toast } from 'sonner';
 
 interface AidRequestFormProps {
-  user: User;
   onSuccess: () => void;
 }
 
-export function AidRequestForm({ user, onSuccess }: AidRequestFormProps) {
+export function AidRequestForm({ onSuccess }: AidRequestFormProps) {
   const [formData, setFormData] = useState<AidRequestFormData>(initialFormData);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -59,7 +57,7 @@ export function AidRequestForm({ user, onSuccess }: AidRequestFormProps) {
     if (formData.hasElderly) specialNeeds.push('Elderly');
     if (formData.additionalNeeds) specialNeeds.push(formData.additionalNeeds);
 
-    // Submit to Supabase
+    // Submit to API
     const result = await submitRequest({
       category: formData.aidType as 'food' | 'medical' | 'shelter' | 'emergency',
       title: `${formData.aidType.charAt(0).toUpperCase() + formData.aidType.slice(1)} Request - ${formData.priority}`,
