@@ -178,7 +178,7 @@ export function VictimDashboard({ user, onViewChange }: VictimDashboardProps) {
               </div>
               <h3 className="font-medium">Support Groups</h3>
               <p className="text-sm text-muted-foreground">Community assistance</p>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button size="sm" variant="outline" className="w-full" onClick={() => onViewChange('support')}>
                 Connect
               </Button>
             </div>

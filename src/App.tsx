@@ -21,6 +21,7 @@ import { LandingPage } from './components/LandingPage';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { ProfileView } from './components/ProfileView';
+import { SupportGroupsView } from './components/SupportGroupsView';
 
 export type ActiveView =
   | 'dashboard'
@@ -34,7 +35,8 @@ export type ActiveView =
   | 'my-tasks'
   | 'volunteer-management'
   | 'inventory'
-  | 'profile';
+  | 'profile'
+  | 'support';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -176,6 +178,8 @@ function App() {
           return <InventoryManagement user={user} />;
         case 'profile':
           return <ProfileView user={user} />;
+        case 'support':
+          return <SupportGroupsView user={user} />;
         default:
           return renderDashboard();
       }
