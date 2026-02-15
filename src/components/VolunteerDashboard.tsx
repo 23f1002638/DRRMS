@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User } from './AuthSystem';
 import { useLiveRequests, useClaimTask } from '../hooks/useDisasterData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -22,7 +22,7 @@ interface VolunteerDashboardProps {
   user: User;
 }
 
-export function VolunteerDashboard({ user }: VolunteerDashboardProps) {
+export function VolunteerDashboard({ user: _user }: VolunteerDashboardProps) {
   const { requests, loading, error } = useLiveRequests();
   const { claimTask, claiming } = useClaimTask();
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -235,7 +235,7 @@ export function VolunteerDashboard({ user }: VolunteerDashboardProps) {
                           <div className="flex items-center space-x-1">
                             <MapPin className="h-3 w-3" />
                             <span>
-                              {task.location_address || `${task.lat.toFixed(4)}, ${task.lng.toFixed(4)}`}
+                              {task.location_address || `${(task.location_lat || 0).toFixed(4)}, ${(task.location_lng || 0).toFixed(4)}`}
                             </span>
                           </div>
                           <div className="flex items-center space-x-1">
@@ -302,7 +302,7 @@ export function VolunteerDashboard({ user }: VolunteerDashboardProps) {
                     <div className="flex-1">
                       <h3 className="font-medium">{task.title}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {task.location_address || `${task.lat.toFixed(4)}, ${task.lng.toFixed(4)}`}
+                        {task.location_address || `${(task.location_lat || 0).toFixed(4)}, ${(task.location_lng || 0).toFixed(4)}`}
                       </p>
                     </div>
                     <Badge className="bg-orange-600 hover:bg-orange-700">In Progress</Badge>

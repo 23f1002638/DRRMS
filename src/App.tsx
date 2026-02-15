@@ -161,7 +161,7 @@ function App() {
           return <MapView user={user} />;
         case 'aid-request':
         case 'request':  // Victim navigation uses 'request'
-          return <AidRequestForm user={user} onSuccess={() => setActiveView('dashboard')} />;
+          return <AidRequestForm onSuccess={() => setActiveView('dashboard')} />;
         case 'status':  // Victim navigation uses 'status'
           return <AidStatusView user={user} />;
         case 'resources':  // Victim navigation uses 'resources'
