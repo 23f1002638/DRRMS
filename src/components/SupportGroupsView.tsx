@@ -9,7 +9,6 @@ import {
     Calendar,
     MapPin,
     Heart,
-    ExternalLink,
     Phone
 } from 'lucide-react';
 
