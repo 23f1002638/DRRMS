@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User } from './AuthSystem';
 import { api } from '../lib/api';
+import { getCurrentLocation, calculateDistance, Coordinates } from '../lib/geolocation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -12,7 +13,9 @@ import {
   MapPin,
   Phone,
   MessageSquare,
-  Heart
+  Heart,
+  Loader2,
+  Navigation
 } from 'lucide-react';
 
 interface VictimDashboardProps {
@@ -20,32 +23,88 @@ interface VictimDashboardProps {
   onViewChange: (view: string) => void;
 }
 
+interface ResourceWithDistance {
+  id: string;
+  name: string;
+  type: string;
+  location_address: string;
+  location_lat?: number;
+  location_lng?: number;
+  contact_phone?: string;
+  status: string;
+  distance?: number;
+}
+
 export function VictimDashboard({ user, onViewChange }: VictimDashboardProps) {
   const [aidRequests, setAidRequests] = useState<any[]>([]);
+  const [nearbyResources, setNearbyResources] = useState<ResourceWithDistance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAidRequests = async () => {
+    const fetchData = async () => {
       try {
-        const data = await api.requests.getAll(user.id);
-        setAidRequests(data || []);
+        // Fetch Aid Requests
+        const requestsData = await api.requests.getAll(user.id);
+        setAidRequests(requestsData || []);
+
+        // Fetch Resources and Calculation Distances
+        const resourcesData = await api.resources.getAll();
+
+        try {
+          const userLocation = await getCurrentLocation();
+
+          const resourcesWithDistance = resourcesData.map((resource: any) => {
+            let distance = undefined;
+            if (resource.location_lat && resource.location_lng) {
+              distance = calculateDistance(userLocation, {
+                lat: resource.location_lat,
+                lng: resource.location_lng
+              });
+            }
+            return { ...resource, distance };
+          });
+
+          // Sort by distance (nearest first)
+          const sortedResources = resourcesWithDistance.sort((a: any, b: any) => {
+            if (a.distance === undefined) return 1;
+            if (b.distance === undefined) return -1;
+            return a.distance - b.distance;
+          });
+
+          setNearbyResources(sortedResources.slice(0, 4));
+        } catch (locError) {
+          console.warn('Could not get user location:', locError);
+          setLocationError('Location access denied. Showing all resources.');
+          // Fallback: just show the first 4 if location fails
+          setNearbyResources(resourcesData.slice(0, 4));
+        }
+
       } catch (error) {
-        console.error('Error fetching aid requests:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAidRequests();
+    fetchData();
   }, [user.id]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'default';
+      case 'limited': return 'secondary';
+      case 'closed': return 'destructive';
+      default: return 'outline';
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="p-6 space-y-6 max-w-4xl mx-auto">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="h-32 bg-muted rounded"></div>
-          <div className="h-64 bg-muted rounded"></div>
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -190,89 +249,53 @@ export function VictimDashboard({ user, onViewChange }: VictimDashboardProps) {
       <Card>
         <CardHeader>
           <CardTitle>Nearby Emergency Resources</CardTitle>
-          <CardDescription>Find assistance centers and emergency contacts near you</CardDescription>
+          <CardDescription>
+            {locationError ? 'Showing all resources' : 'Resources near your location'}
+            {locationError && <span className="text-xs text-yellow-600 ml-2">({locationError})</span>}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium">Emergency Shelter</h4>
-                  <p className="text-sm text-muted-foreground">Community Center, 123 Main St</p>
+            {nearbyResources.map((resource) => (
+              <div key={resource.id} className="p-3 border rounded-lg">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h4 className="font-medium">{resource.name}</h4>
+                    <p className="text-sm text-muted-foreground">{resource.location_address}</p>
+                    {resource.distance !== undefined && (
+                      <p className="text-xs font-semibold text-blue-600 mt-0.5">
+                        {resource.distance} km away
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant={getStatusColor(resource.status)}>{resource.status}</Badge>
                 </div>
-                <Badge variant="default">Open</Badge>
+                <div className="flex space-x-2">
+                  {resource.location_lat && resource.location_lng && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${resource.location_lat},${resource.location_lng}`, '_blank')}
+                    >
+                      <Navigation className="h-3 w-3 mr-1" />
+                      Directions
+                    </Button>
+                  )}
+                  {resource.contact_phone && (
+                    <Button size="sm" variant="outline" onClick={() => window.open(`tel:${resource.contact_phone}`)}>
+                      <Phone className="h-3 w-3 mr-1" />
+                      Call
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  Directions
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </Button>
-              </div>
-            </div>
+            ))}
 
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium">Food Distribution</h4>
-                  <p className="text-sm text-muted-foreground">Red Cross Center, 456 Oak Ave</p>
-                </div>
-                <Badge variant="default">Open</Badge>
+            {nearbyResources.length === 0 && (
+              <div className="col-span-full py-6 text-center text-muted-foreground">
+                No resources available nearby.
               </div>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  Directions
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium">Medical Clinic</h4>
-                  <p className="text-sm text-muted-foreground">Emergency Medical, 789 Pine St</p>
-                </div>
-                <Badge variant="secondary">Limited</Badge>
-              </div>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  Directions
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-3 border rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium">Family Services</h4>
-                  <p className="text-sm text-muted-foreground">Support Hotline: (555) 123-HELP</p>
-                </div>
-                <Badge variant="default">24/7</Badge>
-              </div>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Chat
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </Button>
-              </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
