@@ -71,11 +71,28 @@ export function MyTasksView({ user }: MyTasksViewProps) {
     async function fetchMyTasks() {
         try {
             setLoading(true);
-            // api.assignments.getMy returns tasks joined with request details
             const data = await api.assignments.getMy();
-            // We might need to map or filter if the API returns mixed statuses
-            // The endpoint returns all assignments for the user
-            setTasks(data || []);
+
+            // Map API response to VolunteerTask interface
+            const mappedTasks = (data || []).map((t: any) => ({
+                id: t.id,
+                aid_request_id: t.request_id,
+                task_type: t.category,
+                description: t.request_description, // Use the request description
+                status: t.status,
+                // Map numeric urgency to priority string
+                priority: t.urgency >= 5 ? 'critical' : t.urgency >= 4 ? 'high' : t.urgency >= 3 ? 'medium' : 'low',
+                location: {
+                    lat: t.location_lat,
+                    lng: t.location_lng,
+                    address: t.location_address
+                },
+                created_at: t.created_at || new Date().toISOString(), // Fallback
+                claimed_at: t.claimed_at || t.accepted_at, // Use accepted_at from backend if claimed_at null
+                completed_at: t.completed_at
+            }));
+
+            setTasks(mappedTasks);
         } catch (error) {
             console.error('Error fetching my tasks:', error);
             toast.error('Failed to load your tasks');

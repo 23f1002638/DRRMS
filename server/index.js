@@ -205,7 +205,14 @@ app.get('/api/volunteers', (req, res) => {
 // ASSIGNMENTS / TASKS
 app.get('/api/assignments', authenticateToken, (req, res) => {
     // Get assignments for the logged in volunteer
-    db.all(`SELECT t.*, r.title as request_title, r.description as request_description 
+    db.all(`SELECT t.*, 
+            r.title as request_title, 
+            r.description as request_description,
+            r.category,
+            r.urgency,
+            r.location_lat,
+            r.location_lng,
+            r.location_address
           FROM volunteer_tasks t 
           JOIN aid_requests r ON t.request_id = r.id 
           WHERE t.volunteer_id = ?`,
