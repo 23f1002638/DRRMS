@@ -120,6 +120,8 @@ function App() {
   const renderDashboard = () => {
     if (!user) return null;
 
+    console.log('Rendering dashboard for role:', user.role);
+
     try {
       switch (user.role) {
         case 'admin':
@@ -127,10 +129,12 @@ function App() {
         case 'donor':
           return <DonorDashboard user={user} />;
         case 'volunteer':
+          console.log('Mounting VolunteerDashboard');
           return <VolunteerDashboard user={user} />;
         case 'victim':
           return <VictimDashboard user={user} onViewChange={(view) => setActiveView(view as ActiveView)} />;
         default:
+          console.warn('Unknown role, defaulting to VictimDashboard:', user.role);
           return <VictimDashboard user={user} onViewChange={(view) => setActiveView(view as ActiveView)} />;
       }
     } catch (error) {

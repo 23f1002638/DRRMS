@@ -27,6 +27,8 @@ export function VolunteerDashboard({ user }: VolunteerDashboardProps) {
   const { claimTask, claiming } = useClaimTask();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
+  console.log('VolunteerDashboard Render:', { loading, error, requestsCount: requests.length });
+
   // Filter for pending requests (available tasks)
   const availableTasks = requests.filter(req => req.status === 'pending');
   const inProgressTasks = requests.filter(req => req.status === 'in_progress');
@@ -211,8 +213,8 @@ export function VolunteerDashboard({ user }: VolunteerDashboardProps) {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start space-x-3 flex-1">
                       <div className={`p-2 rounded-lg ${task.urgency >= 4
-                          ? 'bg-red-100 dark:bg-red-900'
-                          : 'bg-blue-100 dark:bg-blue-900'
+                        ? 'bg-red-100 dark:bg-red-900'
+                        : 'bg-blue-100 dark:bg-blue-900'
                         }`}>
                         {getCategoryIcon(task.category)}
                       </div>

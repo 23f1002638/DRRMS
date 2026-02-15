@@ -76,8 +76,8 @@ export const navigationItems = {
   ],
   volunteer: [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'tasks', label: 'My Tasks' },
-    { id: 'assignments', label: 'Assignments' },
+    { id: 'available-tasks', label: 'Available Missions' },
+    { id: 'my-tasks', label: 'My Assignments' },
     { id: 'map', label: 'Field Map' },
   ],
   victim: [
