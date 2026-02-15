@@ -69,7 +69,7 @@
       "scripts": {
             "dev": "vite",
             "dev:server": "node server/index.js",
-            "start": "ls -R && node server/index.js",
+            "start": "echo PWD: && pwd && echo ROOT: && ls -la && echo SERVER: && ls -la server && node server/index.js",
             "build": "vite build"
       }
 }
