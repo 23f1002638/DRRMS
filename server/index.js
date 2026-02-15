@@ -332,9 +332,9 @@ app.post('/api/donations', authenticateToken, (req, res) => {
     const id = uuid();
     const now = new Date().toISOString();
 
-    db.run(`INSERT INTO donations (id, donor_id, type, amount, status, notes, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, req.user.id, donation_type, amount || 0, 'pending', description, now],
+    db.run(`INSERT INTO donations (id, donor_id, donation_type, category, amount, status, description, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, req.user.id, donation_type, category, amount || 0, 'pending', description, now],
         (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ id, status: 'success' });

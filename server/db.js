@@ -99,17 +99,7 @@ function initDb() {
       FOREIGN KEY(request_id) REFERENCES aid_requests(id)
     )`);
 
-    // Donations
-    db.run(`CREATE TABLE IF NOT EXISTS donations (
-      id TEXT PRIMARY KEY,
-      donor_id TEXT,
-      amount REAL,
-      type TEXT,
-      status TEXT,
-      notes TEXT,
-      created_at TEXT,
-      FOREIGN KEY(donor_id) REFERENCES users(id)
-    )`);
+
 
     // Resources (Fixed locations like Shelters, Hospitals)
     db.run(`CREATE TABLE IF NOT EXISTS resources (
