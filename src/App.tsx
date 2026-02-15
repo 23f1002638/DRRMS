@@ -22,6 +22,9 @@ import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
 import { ProfileView } from './components/ProfileView';
 import { SupportGroupsView } from './components/SupportGroupsView';
+import { DonationsView } from './components/DonationsView';
+import { ReliefProjectsView } from './components/ReliefProjectsView';
+import { ImpactReportView } from './components/ImpactReportView';
 
 export type ActiveView =
   | 'dashboard'
@@ -36,7 +39,11 @@ export type ActiveView =
   | 'volunteer-management'
   | 'inventory'
   | 'profile'
-  | 'support';
+  | 'profile'
+  | 'support'
+  | 'donations'
+  | 'projects'
+  | 'impact';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -180,6 +187,12 @@ function App() {
           return <ProfileView user={user} />;
         case 'support':
           return <SupportGroupsView user={user} />;
+        case 'donations':
+          return <DonationsView />;
+        case 'projects':
+          return <ReliefProjectsView />;
+        case 'impact':
+          return <ImpactReportView />;
         default:
           return renderDashboard();
       }
