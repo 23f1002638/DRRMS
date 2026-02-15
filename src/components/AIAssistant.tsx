@@ -68,6 +68,21 @@ export function AIAssistant({ activeView, userRole }: AIAssistantProps) {
 
   const quickActions = getQuickActions();
 
+  import { findBestMatch, AIResponse } from '../lib/ai-knowledge';
+  import { User } from './AuthSystem'; // Ensure User type is available
+
+  // ... inside component ...
+
+  interface Message {
+    id: string;
+    type: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    action?: AIResponse['action']; // Add action support
+  }
+
+  // ... 
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -82,54 +97,27 @@ export function AIAssistant({ activeView, userRole }: AIAssistantProps) {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
+    // Simulate AI processing
     setTimeout(() => {
+      // Mock user object if not fully passed (or use props)
+      const currentUser = { name: 'User', role: userRole || 'guest', id: '0', email: '' } as User;
+
+      const response = findBestMatch(inputValue, activeView || 'dashboard', currentUser);
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: getAIResponse(inputValue),
+        content: response.text,
+        action: response.action,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, assistantMessage]);
       setIsTyping(false);
-    }, 1000 + Math.random() * 2000);
+    }, 800);
   };
 
-  const getAIResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
-
-    // Context-specific responses
-    if (activeView === 'inventory' && (lowerInput.includes('add') || lowerInput.includes('create'))) {
-      return 'To add a new item, click the "Add Item" button in the top right corner. You\'ll need to specify the category, quantity, and location.';
-    }
-
-    if (activeView === 'map' && lowerInput.includes('shelter')) {
-      return 'I can highlight shelter locations on the map. The nearest shelter with capacity is the "Central Emergency Shelter" (2.5km away).';
-    }
-
-    if (lowerInput.includes('emergency') || lowerInput.includes('urgent')) {
-      return 'For immediate emergencies, call 911. For aid requests, I can guide you through the emergency aid request form. Would you like me to help you submit a request or connect you with emergency services?';
-    }
-
-    if (lowerInput.includes('volunteer')) {
-      return 'I can help you find available volunteers in your area or assist with volunteer registration. Current volunteer availability: 23 active volunteers within 5 miles. Would you like me to assign volunteers to a specific task?';
-    }
-
-    if (lowerInput.includes('supplies') || lowerInput.includes('inventory')) {
-      return 'Current supply status: Medical supplies (85% stocked), Food & Water (72% stocked), Shelter materials (91% stocked). Would you like detailed inventory information or help with resource allocation?';
-    }
-
-    if (lowerInput.includes('status') || lowerInput.includes('track')) {
-      return 'I can help you track aid requests, volunteer assignments, or resource distribution. Please specify what you\'d like to track, and I\'ll provide real-time updates.';
-    }
-
-    return `I see you are in the ${activeView?.replace('-', ' ') || 'dashboard'} section. How can I assist you with ${activeView?.replace('-', ' ') || 'disaster relief'} operations specifically?`;
-  };
-
-  const handleQuickAction = (action: string) => {
-    setInputValue(action);
-    handleSendMessage();
-  };
+  // Remove old getAIResponse function
+  // ...
 
   if (!isOpen) {
     return (
@@ -253,6 +241,24 @@ export function AIAssistant({ activeView, userRole }: AIAssistantProps) {
                               </p>
                             </div>
                           </div>
+                          {message.action && (
+                            <div className="mt-2 text-xs">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="w-full text-xs h-7"
+                                onClick={() => {
+                                  if (message.action?.type === 'navigate') {
+                                    window.location.hash = message.action.value; // Simple hash nav for now, preferably use a callback
+                                  } else if (message.action?.type === 'call') {
+                                    window.open(`tel:${message.action.value}`);
+                                  }
+                                }}
+                              >
+                                {message.action.label}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
