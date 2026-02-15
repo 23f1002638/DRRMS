@@ -219,7 +219,7 @@ export function AIAssistant({ activeView, userRole }: AIAssistantProps) {
                               <Bot className="h-4 w-4 mt-0.5 text-blue-600" />
                             )}
                             {message.type === 'user' && (
-                              <User className="h-4 w-4 mt-0.5" />
+                              <UserIcon className="h-4 w-4 mt-0.5" />
                             )}
                             <div>
                               <p className="text-sm">{message.content}</p>
