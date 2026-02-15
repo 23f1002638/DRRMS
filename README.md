@@ -2,8 +2,6 @@
 
 A comprehensive disaster relief management system built with React, TypeScript, and Supabase. This platform connects victims, donors, volunteers, and administrators to deliver rapid, coordinated emergency response and humanitarian aid.
 
-The original Figma design is available at: https://www.figma.com/design/hcsKV6uWfARHv1GGFyVh5e/Disaster-Relief-Resource-Management-System
-
 ##  Features
 
 - **Role-Based Access Control**: Specialized dashboards for Admins, Donors, Volunteers, and Victims
