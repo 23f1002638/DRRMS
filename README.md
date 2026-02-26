@@ -4,7 +4,7 @@ A comprehensive disaster relief management system built with React, TypeScript, 
 
 The original Figma design is available at: https://www.figma.com/design/hcsKV6uWfARHv1GGFyVh5e/Disaster-Relief-Resource-Management-System
 
-##  Features
+## Features
 
 - **Role-Based Access Control**: Specialized dashboards for Admins, Donors, Volunteers, and Victims
 - **Real-Time Analytics**: Live data visualization for tracking donations, aid distribution, and impact metrics
@@ -13,7 +13,7 @@ The original Figma design is available at: https://www.figma.com/design/hcsKV6uW
 - **Volunteer Coordination**: Efficient task assignment with skill-based matching
 - **Instant Aid Requests**: Streamlined request forms with priority classification
 
-##  Tech Stack
+## Tech Stack
 
 - **Frontend**: React 18, TypeScript, Vite
 - **UI Components**: Radix UI, Tailwind CSS
@@ -22,12 +22,12 @@ The original Figma design is available at: https://www.figma.com/design/hcsKV6uW
 - **Icons**: Lucide React
 - **Forms**: React Hook Form
 
-##  Prerequisites
+## Prerequisites
 
 - Node.js 18+ and npm
 - A Supabase account and project
 
-##  Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -63,7 +63,7 @@ The original Figma design is available at: https://www.figma.com/design/hcsKV6uW
    
    Navigate to `http://localhost:5173` (or the port shown in your terminal)
 
-##  Security Notes
+## Security Notes
 
 ### Admin Account Creation
 
@@ -78,7 +78,7 @@ For security, admin accounts cannot be created through the public sign-up form. 
 
 **IMPORTANT**: Never commit your `.env` file to GitHub. It contains sensitive Supabase credentials. The `.gitignore` file is configured to exclude it.
 
-##  User Roles
+## User Roles
 
 ### Victim (Need Help)
 - Submit aid requests
@@ -101,14 +101,14 @@ For security, admin accounts cannot be created through the public sign-up form. 
 - Analyze operations
 - Generate reports
 
-##  License
+## License
 
 This project is licensed under the MIT License.
 
-##  Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-Built with ❤️ for communities in need.
+Built with love for communities in need.
