@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 
 export interface VolunteerStats {
@@ -18,7 +18,7 @@ export function useVolunteers() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    async function fetchVolunteers() {
+    const fetchVolunteers = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -43,13 +43,13 @@ export function useVolunteers() {
         } finally {
             setLoading(false);
         }
-    }
+    }, []);
 
     useEffect(() => {
         fetchVolunteers();
         const interval = setInterval(fetchVolunteers, 10000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchVolunteers]);
 
     return { volunteers, loading, error, refetch: fetchVolunteers };
 }
@@ -58,7 +58,7 @@ export function useDetailedAnalytics() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    async function fetchAnalytics() {
+    const fetchAnalytics = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -141,13 +141,13 @@ export function useDetailedAnalytics() {
         } finally {
             setLoading(false);
         }
-    }
+    }, []);
 
     useEffect(() => {
         fetchAnalytics();
         const interval = setInterval(fetchAnalytics, 15000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchAnalytics]);
 
     return { data, loading, refetch: fetchAnalytics };
 }

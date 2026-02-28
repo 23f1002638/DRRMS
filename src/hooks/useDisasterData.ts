@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { ReliefRequest, InventoryItem, Assignment, Profile } from '../types';
 import { toast } from 'sonner';
@@ -12,17 +12,7 @@ export function useLiveRequests() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        // Initial fetch
-        fetchRequests();
-
-        // Polling for real-time updates (Local Backend)
-        const interval = setInterval(fetchRequests, 5000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    async function fetchRequests() {
+    const fetchRequests = useCallback(async () => {
         try {
             // Don't set loading on poll updates to avoid flickering
             if (requests.length === 0) setLoading(true);
@@ -37,7 +27,17 @@ export function useLiveRequests() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [requests.length]);
+
+    useEffect(() => {
+        // Initial fetch
+        fetchRequests();
+
+        // Polling for real-time updates (Local Backend)
+        const interval = setInterval(fetchRequests, 5000);
+
+        return () => clearInterval(interval);
+    }, [fetchRequests]);
 
     return { requests, loading, error, refetch: fetchRequests };
 }
@@ -51,13 +51,7 @@ export function useInventory() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchInventory();
-        const interval = setInterval(fetchInventory, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    async function fetchInventory() {
+    const fetchInventory = useCallback(async () => {
         try {
             if (inventory.length === 0) setLoading(true);
             setError(null);
@@ -71,7 +65,13 @@ export function useInventory() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [inventory.length]);
+
+    useEffect(() => {
+        fetchInventory();
+        const interval = setInterval(fetchInventory, 5000);
+        return () => clearInterval(interval);
+    }, [fetchInventory]);
 
     return { inventory, loading, error, refetch: fetchInventory };
 }
@@ -133,13 +133,7 @@ export function useAssignments() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchAssignments();
-        const interval = setInterval(fetchAssignments, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    async function fetchAssignments() {
+    const fetchAssignments = useCallback(async () => {
         try {
             if (assignments.length === 0) setLoading(true);
             setError(null);
@@ -160,7 +154,13 @@ export function useAssignments() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [assignments.length]);
+
+    useEffect(() => {
+        fetchAssignments();
+        const interval = setInterval(fetchAssignments, 5000);
+        return () => clearInterval(interval);
+    }, [fetchAssignments]);
 
     return { assignments, loading, error, refetch: fetchAssignments };
 }
@@ -251,15 +251,9 @@ export function useAnalytics() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchAnalytics();
-        const interval = setInterval(fetchAnalytics, 10000);
-        return () => clearInterval(interval);
-    }, []);
-
-    async function fetchAnalytics() {
+    const fetchAnalytics = useCallback(async () => {
         try {
-            setLoading(true);
+            if (!analytics) setLoading(true);
             setError(null);
 
             const [requests, inventory, _] = await Promise.all([
@@ -301,7 +295,13 @@ export function useAnalytics() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [analytics ? 'loaded' : 'null']);
+
+    useEffect(() => {
+        fetchAnalytics();
+        const interval = setInterval(fetchAnalytics, 10000);
+        return () => clearInterval(interval);
+    }, [fetchAnalytics]);
 
     return { analytics, loading, error, refetch: fetchAnalytics };
 }
@@ -326,9 +326,9 @@ export function useMapData() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    async function fetchMapData() {
+    const fetchMapData = useCallback(async () => {
         try {
-            setLoading(true);
+            if (locations.length === 0) setLoading(true);
             setError(null);
 
             const [requests, resources] = await Promise.all([
@@ -389,13 +389,13 @@ export function useMapData() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [locations.length]);
 
     useEffect(() => {
         fetchMapData();
         const interval = setInterval(fetchMapData, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchMapData]);
 
     return { locations, loading, error, refetch: fetchMapData };
 }
